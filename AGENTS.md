@@ -11,14 +11,16 @@ pip install h3-harness-sdk
 ## Quickstart
 
 ```python
-from h3_harness import BaseHarness, Decision, DecisionType, create_router
+from h3_harness import (
+    BaseHarness, Decision, DecisionType, End, TextResponse, create_router,
+)
 from fastapi import FastAPI
 
 class MyHarness(BaseHarness):
     async def on_process(self, req):
         return Decision(
             decision=DecisionType.TEXT,
-            text=TextResponse(content="Hello from Python!", finished=True)
+            text=TextResponse(content="Hello from Python!", finished=True),
         )
 
     async def on_result(self, req):
