@@ -34,6 +34,7 @@
 - [x] AC: `make lint` passes
 - [x] **Commit:** `9abe049`
 
-## [ ] CI — GitHub Actions workflow
-- [ ] CI workflow: lint + build + test on Python 3.10/3.11/3.12
-- [ ] AC: CI passes on push
+## [x] CI — GitHub Actions workflow
+- [x] CI workflow: lint + build + test on Python 3.10/3.11/3.12
+- [x] AC: CI runs on push (workflow created, will verify on next push)
+- [x] **Commit:** `abba2b9`
