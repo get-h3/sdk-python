@@ -11,14 +11,16 @@ pip install h3-harness-sdk
 ## Quickstart
 
 ```python
-from h3_harness import BaseHarness, Decision, DecisionType, create_router
+from h3_harness import (
+    BaseHarness, Decision, DecisionType, End, TextResponse, create_router,
+)
 from fastapi import FastAPI
 
 class MyHarness(BaseHarness):
     async def on_process(self, req):
         return Decision(
             decision=DecisionType.TEXT,
-            text=TextResponse(content="Hello from Python!", finished=True)
+            text=TextResponse(content="Hello from Python!", finished=True),
         )
 
     async def on_result(self, req):
@@ -27,6 +29,21 @@ class MyHarness(BaseHarness):
 app = FastAPI()
 app.include_router(create_router(MyHarness()))
 ```
+
+## Testbed
+
+```python
+from h3_harness import MockHermes
+from h3_harness.examples.echo import EchoHarness
+
+mock = MockHermes(EchoHarness())
+decision = await mock.send_message("Hello!")
+assert decision.text.content == "Echo: Hello!"
+```
+
+## Examples
+
+- **[echo.py](src/h3_harness/examples/echo.py)** — Echo harness that mirrors user messages
 
 ## Development
 
