@@ -15,17 +15,18 @@
 - [x] Build: `make build` green, Lint: `ruff check` green
 - [x] **Commit:** `e621770`
 
-## [ ] TEST — Testbed + test coverage
+## [x] TEST — Testbed + test coverage
 ### testbed.py — MockHermes for pytest
 - Files: `src/h3_harness/testbed.py`
-- [ ] MockHermes class: send_message(content), send_result(result)
-- [ ] Decision assertions
-- [ ] AC: `make build` passes
+- [x] MockHermes class: send_message(content), send_result(result)
+- [x] Decision assertions
+- [x] AC: `make build` passes
 ### Tests
 - Files: `tests/test_protocol.py`, `tests/test_harness.py`
-- [ ] Protocol serialization round-trip + validation
-- [ ] Harness router endpoints via httpx TestClient
-- [ ] AC: `make test` passes
+- [x] Protocol serialization round-trip + validation
+- [x] Harness router endpoints via httpx TestClient
+- [x] AC: `make test` passes (34 tests)
+- [x] **Commit:** `f87d553`
 
 ## [ ] DOC — README.md + example harnesses
 - [ ] README.md with quickstart from AGENTS.md
