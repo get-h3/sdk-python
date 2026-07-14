@@ -28,10 +28,11 @@
 - [x] AC: `make test` passes (34 tests)
 - [x] **Commit:** `f87d553`
 
-## [ ] DOC — README.md + example harnesses
-- [ ] README.md with quickstart from AGENTS.md
-- [ ] Example: echo.py
-- [ ] AC: `make lint` passes
+## [x] DOC — README.md + example harnesses
+- [x] README.md with quickstart from AGENTS.md (fixed missing TextResponse/End imports)
+- [x] Example: echo.py
+- [x] AC: `make lint` passes
+- [x] **Commit:** `9abe049`
 
 ## [ ] CI — GitHub Actions workflow
 - [ ] CI workflow: lint + build + test on Python 3.10/3.11/3.12
