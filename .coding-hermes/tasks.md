@@ -38,3 +38,24 @@
 - [x] CI workflow: lint + build + test on Python 3.10/3.11/3.12
 - [x] AC: CI runs on push (workflow created, will verify on next push)
 - [x] **Commit:** `abba2b9`
+
+## [ ] GAP — Add examples/minimal.py
+- Files: `src/h3_harness/examples/minimal.py`
+- Required by spec S04 §3.1
+- Bare-minimum harness: BaseHarness subclass with on_process → text, on_result → end
+- Must include uvicorn runner + create_router wiring
+- AC: `make lint` passes, `python src/h3_harness/examples/minimal.py` starts a server
+
+## [ ] GAP — Add examples/langchain_agent.py
+- Files: `src/h3_harness/examples/langchain_agent.py`
+- Required by spec S04 §3.1
+- LangChain integration example: H3 harness wrapping a LangChain agent/chain
+- Demonstrates on_process → llm_call → on_result (llm_response) → text → end flow
+- AC: `make lint` passes, example is importable without errors
+
+## [ ] TEST — Run h3-test compliance battery and address failures
+- h3-test from get-h3/shim: `shim/.venv/bin/h3-test --endpoint <url>`
+- Results 2026-07-15: 15/43 passing (health 7/7 ✅, errors 8/10 ⚠️, process/results/stress 0/all ❌)
+- Root cause: shim test battery `_process_body()` sends incomplete payloads missing required JSON Schema fields (`timestamp`, `user_name`, `user_id`, `config.max_iterations`, `session_state.started_at`). SDK validation is correct per protocol JSON Schema v1.
+- **Cross-repo:** shim test battery needs fixture updates to send spec-compliant payloads. SDK can also consider relaxing optional fields for test compatibility.
+- AC: 43/43 passing OR documented justification for skipped tests
