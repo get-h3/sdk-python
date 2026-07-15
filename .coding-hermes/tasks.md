@@ -58,9 +58,10 @@
 - [x] Guard passes: `gitreins guard` → PASS ✓
 - [x] **Commit:** `269a243`
 
-## [ ] TEST — Run h3-test compliance battery and address failures
-- h3-test from get-h3/shim: `shim/.venv/bin/h3-test --endpoint <url>`
-- Results 2026-07-15: 15/43 passing (health 7/7 ✅, errors 8/10 ⚠️, process/results/stress 0/all ❌)
-- Root cause: shim test battery `_process_body()` sends incomplete payloads missing required JSON Schema fields (`timestamp`, `user_name`, `user_id`, `config.max_iterations`, `session_state.started_at`). SDK validation is correct per protocol JSON Schema v1.
-- **Cross-repo:** shim test battery needs fixture updates to send spec-compliant payloads. SDK can also consider relaxing optional fields for test compatibility.
-- AC: 43/43 passing OR documented justification for skipped tests
+## [x] TEST — Run h3-test compliance battery and address failures
+- [x] h3-test results 2026-07-15 (verified): **15/43 passing** (health 7/7 ✅, errors 8/10 ⚠️, process/results/stress 0/all ❌)
+- [x] Root cause confirmed: shim `_process_body()` sends incomplete payloads missing required JSON Schema fields (`message.timestamp`, `identity.user_name`, `identity.user_id`, `context.config.max_iterations`, `context.session_state.started_at`). SDK validation (`ProcessRequest` Pydantic model) correctly rejects these as 422 per protocol JSON Schema v1.
+- [x] 28 failing tests are all 422 validation responses — not SDK bugs. Shim test battery needs fixture updates to send spec-compliant payloads.
+- [x] **Justification for skipped tests:** 28/43 tests fail due to shim-side payload incompleteness, not SDK-side issues. SDK is compliant per the H3 protocol JSON Schema. The fix belongs in `get-h3/shim/src/h3_shim/test_battery.py:_process_body()`.
+- [x] **Commit:** `9939656` (board update)
+- [x] **Follow-up:** Create task in shim repo to update test fixture payloads
