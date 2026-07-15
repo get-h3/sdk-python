@@ -33,7 +33,7 @@ app.include_router(create_router(MyHarness()))
 ## Testbed
 
 ```python
-from h3_harness import MockHermes
+from h3_harness.testbed import MockHermes
 from h3_harness.examples.echo import EchoHarness
 
 mock = MockHermes(EchoHarness())

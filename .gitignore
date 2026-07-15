@@ -6,3 +6,8 @@ dist/
 build/
 .pytest_cache/
 .ruff_cache/
+
+# Hilo — local cache files (rebuildable)
+.vfs/graph/graph.db
+.vfs/graph/graph.db.wal
+.vfs/graph/.last_warm
