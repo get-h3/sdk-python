@@ -45,12 +45,11 @@
 - [x] Lint passes, server starts, health endpoint responds
 - [x] **Commit:** `825615c`
 
-## [ ] GAP — Add examples/langchain_agent.py
-- Files: `src/h3_harness/examples/langchain_agent.py`
-- Required by spec S04 §3.1
-- LangChain integration example: H3 harness wrapping a LangChain agent/chain
-- Demonstrates on_process → llm_call → on_result (llm_response) → text → end flow
-- AC: `make lint` passes, example is importable without errors
+## [x] GAP — Add examples/langchain_agent.py
+- [x] LangChain integration example: H3 harness wrapping a LangChain agent/chain
+- [x] Demonstrates on_process → llm_call → on_result (llm_response) → text → end flow
+- [x] Verified: `make lint` passes, `make build` passes, 34/34 tests pass, importable without errors
+- [x] **Commit:** `9caaf0a`
 
 ## [ ] TEST — Run h3-test compliance battery and address failures
 - h3-test from get-h3/shim: `shim/.venv/bin/h3-test --endpoint <url>`
