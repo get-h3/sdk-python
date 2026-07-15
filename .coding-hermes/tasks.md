@@ -39,12 +39,11 @@
 - [x] AC: CI runs on push (workflow created, will verify on next push)
 - [x] **Commit:** `abba2b9`
 
-## [ ] GAP — Add examples/minimal.py
-- Files: `src/h3_harness/examples/minimal.py`
-- Required by spec S04 §3.1
-- Bare-minimum harness: BaseHarness subclass with on_process → text, on_result → end
-- Must include uvicorn runner + create_router wiring
-- AC: `make lint` passes, `python src/h3_harness/examples/minimal.py` starts a server
+## [x] GAP — Add examples/minimal.py
+- [x] MinimalHarness class: BaseHarness subclass with on_process → text, on_result → end
+- [x] uvicorn runner + create_router wiring + add_middleware
+- [x] Lint passes, server starts, health endpoint responds
+- [x] **Commit:** `825615c`
 
 ## [ ] GAP — Add examples/langchain_agent.py
 - Files: `src/h3_harness/examples/langchain_agent.py`
