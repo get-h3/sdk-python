@@ -69,4 +69,4 @@
 ## [x] DOC — Update README and AGENTS.md documentation
 - [x] README Examples: added `minimal.py` (minimal harness + uvicorn) and `langchain_agent.py` (LangChain integration)
 - [x] AGENTS.md Package Structure: added `middleware.py` (request logging middleware via BaseHTTPMiddleware)
-- [x] **Commit:** `TBD`
+- [x] **Commit:** `38d213b`
