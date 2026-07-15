@@ -81,8 +81,12 @@ class BaseHarness(ABC):
         return True
 
     async def on_session_terminate(self, session_id: str) -> None:
-        """Called on DELETE /v1/sessions/{session_id}."""
-        pass
+        """Called on DELETE /v1/sessions/{session_id}.
+
+        Override to perform cleanup when a session is terminated.
+        The base implementation is a no-op.
+        """
+        return None
 
     def health(self) -> HealthResponse:
         """Return harness health status. Override for custom health logic."""

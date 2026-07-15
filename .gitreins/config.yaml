@@ -2,17 +2,11 @@ project: "h3-sdk-python"
 language: "python"
 
 guards:
-  secrets:
-    enabled: true
-    severity: block
-  build:
-    enabled: false
-  lint:
-    enabled: false
-  tests:
-    enabled: false
-  dead_code:
-    enabled: false
+  secrets: true
+  dead_code: false
+  build: false
+  lint: false
+  tests: false
 
 test:
   mode: full
