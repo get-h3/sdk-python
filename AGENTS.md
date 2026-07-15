@@ -34,6 +34,7 @@ app.include_router(create_router(MyHarness()))
 
 - `protocol.py` — Pydantic models (generated from get-h3/protocol JSON Schema)
 - `harness.py` — BaseHarness ABC + FastAPI router
+- `middleware.py` — Request logging middleware via BaseHTTPMiddleware
 - `testbed.py` — MockHermes for pytest
 
 ## Development

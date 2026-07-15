@@ -65,3 +65,8 @@
 - [x] **Justification for skipped tests:** 28/43 tests fail due to shim-side payload incompleteness, not SDK-side issues. SDK is compliant per the H3 protocol JSON Schema. The fix belongs in `get-h3/shim/src/h3_shim/test_battery.py:_process_body()`.
 - [x] **Commit:** `9939656` (board update)
 - [x] **Follow-up:** Create task in shim repo to update test fixture payloads
+
+## [x] DOC — Update README and AGENTS.md documentation
+- [x] README Examples: added `minimal.py` (minimal harness + uvicorn) and `langchain_agent.py` (LangChain integration)
+- [x] AGENTS.md Package Structure: added `middleware.py` (request logging middleware via BaseHTTPMiddleware)
+- [x] **Commit:** `TBD`

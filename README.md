@@ -44,6 +44,8 @@ assert decision.text.content == "Echo: Hello!"
 ## Examples
 
 - **[echo.py](src/h3_harness/examples/echo.py)** — Echo harness that mirrors user messages
+- **[minimal.py](src/h3_harness/examples/minimal.py)** — Minimal harness with health endpoint, uvicorn runner
+- **[langchain_agent.py](src/h3_harness/examples/langchain_agent.py)** — LangChain integration: LLM call with text response
 
 ## Development
 
