@@ -51,6 +51,12 @@
 - [x] Verified: `make lint` passes, `make build` passes, 34/34 tests pass, importable without errors
 - [x] **Commit:** `9caaf0a`
 
+## [ ] CI — Pre-existing dead_code guard failure in harness.py
+- GitReins guard fails on `src/h3_harness/harness.py:83` — `on_session_terminate` has empty body (`pass`)
+- Also 5 UNUSED_FUNCTION warnings in harness.py + test_harness.py
+- Pre-existing since CORE phase; does not block forward progress
+- AC: fix empty function bodies and unused function warnings
+
 ## [ ] TEST — Run h3-test compliance battery and address failures
 - h3-test from get-h3/shim: `shim/.venv/bin/h3-test --endpoint <url>`
 - Results 2026-07-15: 15/43 passing (health 7/7 ✅, errors 8/10 ⚠️, process/results/stress 0/all ❌)
