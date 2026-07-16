@@ -11,19 +11,19 @@ $(VENV):
 install: $(VENV)
 
 build:
-	$(PYTHON) -c "import h3_harness; print('build: OK')"
+	uv run python -c "import h3_harness; print('build: OK')"
 
 test:
-	$(PYTHON) -m pytest -x --tb=short -q
+	uv run pytest -x --tb=short -q
 
 test-full:
-	$(PYTHON) -m pytest -x -v
+	uv run pytest -x -v
 
 lint:
-	$(PYTHON) -m ruff check src/ tests/
+	uv run ruff check src/ tests/
 
 fmt:
-	$(PYTHON) -m ruff format src/ tests/
+	uv run ruff format src/ tests/
 
 clean:
 	rm -rf $(VENV) __pycache__ src/h3_harness/__pycache__
