@@ -122,7 +122,7 @@ def test_result_request_round_trip():
     req = ResultRequest(
         session_id="s-1",
         decision_id="d-1",
-        result=_result_payload(),
+        result=_result_payload().model_dump(),
     )
     assert_round_trip(ResultRequest, req)
 
@@ -147,7 +147,7 @@ def test_error_response_round_trip():
             code=ErrorCode.INVALID_REQUEST,
             message="Bad payload",
             details={"field": "message"},
-        ),
+        ).model_dump(),
     )
     assert_round_trip(ErrorResponse, resp)
 
@@ -225,7 +225,7 @@ def test_error_response_json_serializable():
         error=ErrorDetail(
             code=ErrorCode.INTERNAL_ERROR,
             message="kaboom",
-        ),
+        ).model_dump(),
     )
     d = resp.model_dump(mode="json")
     # Must be JSON-serializable

@@ -34,4 +34,5 @@ all: install lint build test
 
 generate:
 	uv run python scripts/generate-protocol.py
+	uv run ruff check --fix src/h3_harness/protocol.py
 	uv run ruff format src/h3_harness/protocol.py
