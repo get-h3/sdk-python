@@ -135,8 +135,14 @@ def generate_protocol(schema_dir: str) -> str:
 
     if "HealthResponse" in schemas:
         hr = schemas["HealthResponse"]
-        lines.extend(generate_enum("HealthStatus", hr["properties"]["status"]["enum"]))
-        lines.extend(generate_enum("Capability", hr["properties"]["capabilities"]["items"]["enum"]))
+        lines.extend(
+            generate_enum("HealthStatus", hr["properties"]["status"]["enum"])
+        )
+        lines.extend(
+            generate_enum(
+                "Capability", hr["properties"]["capabilities"]["items"]["enum"]
+            )
+        )
 
     if "CancelRequest" in schemas:
         cr = schemas["CancelRequest"]
@@ -149,7 +155,11 @@ def generate_protocol(schema_dir: str) -> str:
         rr = schemas["ResultRequest"]
         # ResultType from nested result.type enum
         result_obj = rr.get("properties", {}).get("result", {})
-        result_props = result_obj.get("properties", {}) if isinstance(result_obj, dict) else {}
+        result_props = (
+            result_obj.get("properties", {})
+            if isinstance(result_obj, dict)
+            else {}
+        )
         type_prop = result_props.get("type", {})
         if "enum" in type_prop:
             vals = type_prop["enum"]
