@@ -79,3 +79,12 @@
 - [x] **Commit:** `da26f48`
 
 **Spec ref:** S08 (Cross-Repo Release Pipeline)
+
+## [x] GAP — Fix `make generate` idempotency: lenient defaults lost on regeneration
+- [x] Root cause: manual defaults in protocol.py wiped by JSON Schema regeneration
+- [x] Fix: add LENIENT_DEFAULTS + FIELD_OVERRIDES to generate-protocol.py
+- [x] Hardcode Decision class (discriminated union / oneOf not mappable from flat JSON Schema)
+- [x] Fix testbed.py + test_protocol.py: dict-typed fields require model_dump() on pass
+- [x] Makefile: add ruff check --fix to generate target
+- [x] Verify: make generate → make lint → make test all pass (34/34)
+- [x] **Commit:** `37db6fb`
