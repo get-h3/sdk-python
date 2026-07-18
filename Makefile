@@ -1,4 +1,4 @@
-.PHONY: install build test lint fmt clean
+.PHONY: install build test lint fmt clean generate
 
 VENV := .venv
 PYTHON := $(VENV)/bin/python
@@ -31,3 +31,7 @@ clean:
 	find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
 
 all: install lint build test
+
+generate:
+	uv run python scripts/generate-protocol.py
+	uv run ruff format src/h3_harness/protocol.py

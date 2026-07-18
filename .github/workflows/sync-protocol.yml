@@ -1,0 +1,94 @@
+name: Sync Protocol
+
+on:
+  repository_dispatch:
+    types: [protocol-update]
+  workflow_dispatch:
+    inputs:
+      protocol_version:
+        description: 'Protocol tag (e.g., v1.0.1)'
+        required: true
+        type: string
+
+env:
+  PROTOCOL_VERSION: ${{ github.event.client_payload.protocol_version || inputs.protocol_version }}
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies
+        run: make install
+
+      - name: Fetch protocol schemas
+        run: |
+          echo "Fetching protocol ${PROTOCOL_VERSION}"
+          curl -sL "https://github.com/get-h3/protocol/archive/refs/tags/${PROTOCOL_VERSION}.tar.gz" | tar xz
+          mv "protocol-"* protocol-src
+
+      - name: Regenerate types
+        run: make generate
+
+      - name: Lint
+        run: make lint
+
+      - name: Test
+        run: make test
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "No protocol changes detected."
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit generated code
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "sync: regenerate from protocol ${PROTOCOL_VERSION}"
+
+      - name: Bump version
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          # Extract version from tag (strip 'v' prefix)
+          V="${PROTOCOL_VERSION#v}"
+          # Update pyproject.toml version
+          sed -i "s/^version = \".*\"/version = \"${V}\"/" pyproject.toml
+          git add pyproject.toml
+          git commit -m "release: bump to ${PROTOCOL_VERSION}" || true
+
+      - name: Tag and push
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git tag "${PROTOCOL_VERSION}"
+          git push origin main --tags
+
+      - name: Build package
+        if: steps.changes.outputs.changed == 'true'
+        run: uv build
+
+      - name: Publish to PyPI
+        if: steps.changes.outputs.changed == 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
