@@ -70,3 +70,11 @@
 - [x] README Examples: added `minimal.py` (minimal harness + uvicorn) and `langchain_agent.py` (LangChain integration)
 - [x] AGENTS.md Package Structure: added `middleware.py` (request logging middleware via BaseHTTPMiddleware)
 - [x] **Commit:** `38d213b`
+
+## [ ] P5-03 — Sync-protocol workflow: regenerate → test → release
+- [ ] Create `.github/workflows/sync-protocol.yml` — triggered by repository_dispatch from protocol repo
+- [ ] Steps: checkout → regenerate Pydantic models from latest protocol JSON Schema → `make test` → tag and release
+- [ ] Publish to PyPI on release
+- [ ] Test: protocol dispatches → Python SDK regenerates and releases automatically
+
+**Spec ref:** S08 (Cross-Repo Release Pipeline)
