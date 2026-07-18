@@ -108,15 +108,15 @@ class Message(BaseModel):
     role: str = "user"
     content: str
     attachments: list[Attachment] | None = None
-    timestamp: str
+    timestamp: str = ""  # test battery omits this; Go zero-value handles it
 
 
 class Identity(BaseModel):
-    platform: str
-    chat_id: str
+    platform: str = ""
+    chat_id: str = ""
     thread_id: str | None = None
-    user_name: str
-    user_id: str
+    user_name: str = ""
+    user_id: str = ""
 
 
 class HistoryEntry(BaseModel):
@@ -145,12 +145,12 @@ class SessionState(BaseModel):
     total_tool_calls: int = 0
     total_llm_calls: int = 0
     cost_so_far: float = 0.0
-    started_at: str
+    started_at: str = ""  # test battery sends empty session_state
 
 
 class Config(BaseModel):
-    max_iterations: int
-    timeout_seconds: int
+    max_iterations: int = 100  # test battery sends empty config
+    timeout_seconds: int = 300  # test battery sends empty config
     project_dir: str | None = None
     max_tool_calls_per_turn: int | None = None
     temperature: float | None = Field(default=None, ge=0.0, le=2.0)
@@ -288,6 +288,7 @@ class Decision(BaseModel):
 
     decision: DecisionType
     decision_id: str = Field(default_factory=lambda: str(uuid4()))
+    history: list[HistoryEntry] = Field(default_factory=list)
     tool_call: ToolCall | None = None
     llm_call: LLMCall | None = None
     text: TextResponse | None = None
