@@ -101,7 +101,7 @@ class MockHermes:
         req = ResultRequest(
             session_id=session_id,
             decision_id=decision_id or str(uuid4()),
-            result=result,
+            result=result if isinstance(result, dict) else result.model_dump(),
         )
         return await self.harness.on_result(req)
 

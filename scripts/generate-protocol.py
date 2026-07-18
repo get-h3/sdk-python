@@ -26,7 +26,7 @@ from enum import Enum
 from typing import Any
 from uuid import uuid4
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 '''
 
@@ -76,6 +76,31 @@ def py_type_from_schema(prop: dict, defs: dict) -> str:
     return "Any"
 
 
+# Fields that should default to empty/useful values even when JSON Schema marks them required.
+# This ensures SDK consumers get ergonomic defaults for session-state and context fields.
+LENIENT_DEFAULTS: dict[str, dict[str, str]] = {
+    "Message": {"role": '"user"'},
+    "SessionState": {
+        "turn_count": "0",
+        "total_tool_calls": "0",
+        "total_llm_calls": "0",
+        "cost_so_far": "0.0",
+    },
+    "Context": {
+        "history": "[]",
+        "tools": "[]",
+        "models": "[]",
+    },
+}
+
+# Fields that need explicit Field() constraints not captured by JSON Schema.
+# Maps class name → field name → full Python expression for the field.
+FIELD_OVERRIDES: dict[str, dict[str, str]] = {
+    "Wait": {"duration_seconds": "duration_seconds: int | None = Field(default=None, ge=1)"},
+    "ResultPayload": {"duration_ms": "duration_ms: int | None = Field(default=None, ge=0)"},
+}
+
+
 def generate_class(class_name: str, schema: dict, defs: dict) -> list[str]:
     """Generate lines for one Pydantic model."""
     lines = [f"\nclass {class_name}(BaseModel):"]
@@ -88,11 +113,17 @@ def generate_class(class_name: str, schema: dict, defs: dict) -> list[str]:
 
     props = schema.get("properties", {})
     required = set(schema.get("required", []))
+    defaults = LENIENT_DEFAULTS.get(class_name, {})
+    overrides = FIELD_OVERRIDES.get(class_name, {})
 
     for name, prop in sorted(props.items(), key=lambda x: (x[0] not in required, x[0])):
         ptype = py_type_from_schema(prop, defs)
         is_req = name in required
-        if is_req:
+        if name in overrides:
+            lines.append(f"    {overrides[name]}")
+        elif name in defaults:
+            lines.append(f"    {name}: {ptype} = {defaults[name]}")
+        elif is_req:
             lines.append(f"    {name}: {ptype}")
         else:
             lines.append(f"    {name}: {ptype} | None = None")
@@ -215,25 +246,42 @@ def generate_protocol(schema_dir: str) -> str:
     lines.append("    success: bool")
     lines.append("    tool_name: str | None = None")
     lines.append("    data: dict[str, Any] | None = None")
-    lines.append("    duration_ms: int | None = None")
+    lines.append("    duration_ms: int | None = Field(default=None, ge=0)")
 
     # ── Request/Response Models ──
     lines.append("\n\n# ── Request/Response Models ──\n")
     for key in ["ProcessRequest", "ResultRequest", "CancelRequest",
-                 "HealthResponse", "ErrorResponse", "SessionResponse", "Decision"]:
+                 "HealthResponse", "ErrorResponse", "SessionResponse"]:
         if key in schemas:
             lines.extend(generate_class(key, schemas[key], defs))
 
-    # ── Decision auto-ID ──
-    lines.append("""
-    def __init__(self, **data):
-        if 'decision_id' not in data or data['decision_id'] is None:
-            data['decision_id'] = str(uuid4())
-        super().__init__(**data)""")
-
-    # Import uuid4 at the end (always needed for Decision auto-ID)
+    # ── Decision (discriminated union — hardcoded for oneOf handling) ──
+    lines.append("\n\nclass Decision(BaseModel):")
+    lines.append('    """Top-level decision object sent from harness to Hermes.')
     lines.append("")
-    return "\n".join(lines)
+    lines.append('    The decision field determines which sub-type is valid.')
+    lines.append('    Pydantic validates that the matching sub-field is present.')
+    lines.append('    """')
+    lines.append("")
+    lines.append("    decision: DecisionType")
+    lines.append('    decision_id: str = Field(default_factory=lambda: str(uuid4()))')
+    lines.append("    history: list[HistoryEntry] = Field(default_factory=list)")
+    lines.append("    tool_call: ToolCall | None = None")
+    lines.append("    llm_call: LLMCall | None = None")
+    lines.append("    text: TextResponse | None = None")
+    lines.append("    wait: Wait | None = None")
+    lines.append("    delegate: Delegate | None = None")
+    lines.append("    end: End | None = None")
+
+    # Fix long docstrings
+    code = "\n".join(lines)
+    code = code.replace(
+        '"""Request body for POST /v1/process — new user message triggers harness process..."""',
+        '"""Request body for POST /v1/process — new message triggers process.\n'
+        '    The harness evaluates the message and context, then returns a Decision.\n'
+        '    """',
+    )
+    return code
 
 
 def main():
