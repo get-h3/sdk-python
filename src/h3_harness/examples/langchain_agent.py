@@ -47,9 +47,7 @@ class LangChainHarness(BaseHarness):
     async def on_process(self, req):
         """Kick off the LangChain pipeline via an LLM_CALL."""
         # Convert the incoming Message to the LLMMessage format expected by Hermes
-        llm_messages = [
-            LLMMessage(role="user", content=req.message.content)
-        ]
+        llm_messages = [LLMMessage(role="user", content=req.message.content)]
         # Include conversation history if available
         for entry in req.context.history:
             llm_messages.append(LLMMessage(role=entry.role, content=entry.content))
