@@ -71,10 +71,11 @@
 - [x] AGENTS.md Package Structure: added `middleware.py` (request logging middleware via BaseHTTPMiddleware)
 - [x] **Commit:** `38d213b`
 
-## [ ] P5-03 — Sync-protocol workflow: regenerate → test → release
-- [ ] Create `.github/workflows/sync-protocol.yml` — triggered by repository_dispatch from protocol repo
-- [ ] Steps: checkout → regenerate Pydantic models from latest protocol JSON Schema → `make test` → tag and release
-- [ ] Publish to PyPI on release
-- [ ] Test: protocol dispatches → Python SDK regenerates and releases automatically
+## [x] P5-03 — Sync-protocol workflow: regenerate → test → release
+- [x] `.github/workflows/sync-protocol.yml`: repository_dispatch + workflow_dispatch
+- [x] `scripts/generate-protocol.py`: JSON Schema → Pydantic code generator
+- [x] Makefile: `generate` target (generate + ruff format)
+- [x] Guard passes, 34/34 tests pass
+- [x] **Commit:** `da26f48`
 
 **Spec ref:** S08 (Cross-Repo Release Pipeline)
