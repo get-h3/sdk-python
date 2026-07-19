@@ -80,6 +80,9 @@ def py_type_from_schema(prop: dict, defs: dict) -> str:
 # This ensures SDK consumers get ergonomic defaults for session-state and context fields.
 LENIENT_DEFAULTS: dict[str, dict[str, str]] = {
     "Message": {"role": '"user"'},
+    "Config": {
+        "timeout_seconds": "300",
+    },
     "SessionState": {
         "turn_count": "0",
         "total_tool_calls": "0",
