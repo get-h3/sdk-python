@@ -123,10 +123,12 @@
 - [x] AC: file exists, covers setup + test + PR flow
 - [x] **Commit:** `ee95e7e`
 
-## [ ] TEST-ND — Add tests for middleware.py
-- [ ] middleware.py: BaseHTTPMiddleware request logging (65 lines, 0 tests)
-- [ ] Test: verify request_id header forwarded, X-Request-ID set, request logging calls
-- [ ] AC: `make test` passes with new tests, coverage >80% on middleware.py
+## [x] TEST-ND — Add tests for middleware.py
+- [x] middleware.py: BaseHTTPMiddleware request logging (65 lines, 0 tests)
+- [x] Test: verify request_id header forwarded, X-Request-ID set, request logging calls
+- [x] AC: `make test` passes with new tests, coverage >80% on middleware.py
+- [x] **Bug found & fixed:** ErrorResponse(error=ErrorDetail(...)) — needed .model_dump() (dict expected, not object)
+- [x] **Commits:** `7f8b5e6` (6 tests), `32af1fb` (middleware fix)
 
 ## [ ] TEST-ND — Add tests for testbed.py
 - [ ] testbed.py: MockHermes + decision assertions (115 lines, 0 tests)
