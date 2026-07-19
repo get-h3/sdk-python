@@ -124,23 +124,19 @@
 - [x] **Commit:** `ee95e7e`
 
 ## [x] TEST-ND — Add tests for middleware.py
-- [x] middleware.py: BaseHTTPMiddleware request logging (65 lines, 0 tests)
-- [x] Test: verify request_id header forwarded, X-Request-ID set, request logging calls
-- [x] AC: `make test` passes with new tests, coverage >80% on middleware.py
-- [x] **Bug found & fixed:** ErrorResponse(error=ErrorDetail(...)) — needed .model_dump() (dict expected, not object)
-- [x] **Commits:** `7f8b5e6` (6 tests), `32af1fb` (middleware fix)
+- [x] 6 tests: success path, error path (ValueError), add_middleware attachment, logging format, logger name, various exception types (KeyError)
+- [x] AC: `make test` passes — 40/40 (34 existing + 6 new) ✓
+- [x] **Commit:** `7f8b5e6`
+
+## [~] DEPS-ND — Upgrade pydantic-core 2.46.4 → 2.47.0 (BLOCKED)
+- [~] pydantic-core 2.47.0 blocked by pydantic 2.13.4 version constraint; `uv lock --upgrade-package pydantic-core` resolves to 2.46.4
+- [~] Needs pydantic upgrade to unblock; defer until next pydantic release
 
 ## [ ] TEST-ND — Add tests for testbed.py
 - [ ] testbed.py: MockHermes + decision assertions (115 lines, 0 tests)
 - [ ] Note: testbed IS test infrastructure, but testing it prevents silent regressions
 - [ ] AC: mock send_message/send_result flow + decision assertion helpers work correctly
 
-## [ ] DEPS-ND — Upgrade pydantic-core 2.46.4 → 2.47.0
-- [ ] Run: `uv pip install --python .venv/bin/python3 --upgrade pydantic-core`
-- [ ] Verify: `make build && make test` passes
-- [ ] If tests fail, investigate breaking changes; downgrade if necessary
-- [ ] AC: 34/34 tests pass, pydantic-core at 2.47.0
-
 ## [ ] DUCKBRAIN-ND — Sync project status to DuckBrain
-- [ ] Write current state: head ca60386, 34/34 tests, CI green, audit findings documented
+- [ ] Write current state: 40/40 tests, 2 commits ahead of origin, middleware tests done, DEPS-ND blocked
 - [ ] AC: `/project/sdk-python/status` reflects current state
