@@ -137,6 +137,7 @@
 - [ ] Note: testbed IS test infrastructure, but testing it prevents silent regressions
 - [ ] AC: mock send_message/send_result flow + decision assertion helpers work correctly
 
-## [ ] DUCKBRAIN-ND — Sync project status to DuckBrain
-- [ ] Write current state: 40/40 tests, 2 commits ahead of origin, middleware tests done, DEPS-ND blocked
-- [ ] AC: `/project/sdk-python/status` reflects current state
+## [x] DUCKBRAIN-ND — Sync project status to DuckBrain
+- [x] Synced: 40/40 tests, 2 commits ahead of origin, middleware tests done, DEPS-ND blocked (pydantic constraint)
+- [x] AC: `/project/sdk-python/status` updated — 3 entries now reflect current state
+- [x] **Commit:** `cfffefd` (board update)
