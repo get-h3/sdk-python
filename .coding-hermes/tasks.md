@@ -89,8 +89,9 @@
 - [x] Verify: make generate → make lint → make test all pass (34/34)
 - [x] **Commit:** `37db6fb`
 
-## [ ] DOC — README quickstart missing `timeout_seconds` in example payload; Config model lacks lenient default
-- [ ] Config Pydantic model: `timeout_seconds: int` has no default → 422 when omitted
-- [ ] Fix: add `"Config": {"timeout_seconds": "300"}` to LENIENT_DEFAULTS in `scripts/generate-protocol.py`
-- [ ] Regenerate: `make generate` → verify `make lint` + `make test` pass
-- [ ] AC: `make test` passes, `make build` passes, README example works with minimal payload
+## [x] DOC — README quickstart missing `timeout_seconds` in example payload; Config model lacks lenient default
+- [x] Config Pydantic model: `timeout_seconds: int` has no default → 422 when omitted
+- [x] Fix: add `"Config": {"timeout_seconds": "300"}` to LENIENT_DEFAULTS in `scripts/generate-protocol.py`
+- [x] Regenerate: `make generate` → verify `make lint` + `make test` pass
+- [x] AC: `make test` passes, `make build` passes, README example works with minimal payload
+- [x] **Commit:** `79e4da9`
