@@ -52,7 +52,9 @@ class _RequestLoggingMiddleware(BaseHTTPMiddleware):
             return JSONResponse(
                 status_code=500,
                 content=ErrorResponse(
-                    error=ErrorDetail(code=ErrorCode.INTERNAL_ERROR, message=str(exc))
+                    error=ErrorDetail(
+                        code=ErrorCode.INTERNAL_ERROR, message=str(exc)
+                    ).model_dump()
                 ).model_dump(mode="json"),
             )
 
