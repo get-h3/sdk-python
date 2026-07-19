@@ -118,9 +118,10 @@
 
 ---
 
-## [ ] DOC-ND — Add CONTRIBUTING.md
-- [ ] Create CONTRIBUTING.md with: setup instructions, `make` targets, test workflow, PR process, protocol regeneration via `make generate`
-- [ ] AC: file exists, covers setup + test + PR flow
+## [x] DOC-ND — Add CONTRIBUTING.md
+- [x] Create CONTRIBUTING.md with: setup instructions, `make` targets, test workflow, PR process, protocol regeneration via `make generate`
+- [x] AC: file exists, covers setup + test + PR flow
+- [x] **Commit:** `ee95e7e`
 
 ## [ ] TEST-ND — Add tests for middleware.py
 - [ ] middleware.py: BaseHTTPMiddleware request logging (65 lines, 0 tests)
