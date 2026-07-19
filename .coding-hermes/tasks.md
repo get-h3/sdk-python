@@ -60,15 +60,14 @@
 
 ## [x] TEST — Run h3-test compliance battery and address failures
 - [x] h3-test results 2026-07-15 (verified): **15/43 passing** (health 7/7 ✅, errors 8/10 ⚠️, process/results/stress 0/all ❌)
-- [x] Root cause confirmed: shim `_process_body()` sends incomplete payloads missing required JSON Schema fields (`message.timestamp`, `identity.user_name`, `identity.user_id`, `context.config.max_iterations`, `context.session_state.started_at`). SDK validation (`ProcessRequest` Pydantic model) correctly rejects these as 422 per protocol JSON Schema v1.
-- [x] 28 failing tests are all 422 validation responses — not SDK bugs. Shim test battery needs fixture updates to send spec-compliant payloads.
-- [x] **Justification for skipped tests:** 28/43 tests fail due to shim-side payload incompleteness, not SDK-side issues. SDK is compliant per the H3 protocol JSON Schema. The fix belongs in `get-h3/shim/src/h3_shim/test_battery.py:_process_body()`.
+- [x] Root cause confirmed: shim `_process_body()` sends incomplete payloads missing required JSON Schema fields
+- [x] 28 failing tests are all 422 validation responses — not SDK bugs. Shim test battery needs fixture updates.
 - [x] **Commit:** `9939656` (board update)
 - [x] **Follow-up:** Create task in shim repo to update test fixture payloads
 
 ## [x] DOC — Update README and AGENTS.md documentation
-- [x] README Examples: added `minimal.py` (minimal harness + uvicorn) and `langchain_agent.py` (LangChain integration)
-- [x] AGENTS.md Package Structure: added `middleware.py` (request logging middleware via BaseHTTPMiddleware)
+- [x] README Examples: added `minimal.py` and `langchain_agent.py`
+- [x] AGENTS.md Package Structure: added `middleware.py`
 - [x] **Commit:** `38d213b`
 
 ## [x] P5-03 — Sync-protocol workflow: regenerate → test → release
@@ -77,7 +76,6 @@
 - [x] Makefile: `generate` target (generate + ruff format)
 - [x] Guard passes, 34/34 tests pass
 - [x] **Commit:** `da26f48`
-
 **Spec ref:** S08 (Cross-Repo Release Pipeline)
 
 ## [x] GAP — Fix `make generate` idempotency: lenient defaults lost on regeneration
@@ -95,3 +93,51 @@
 - [x] Regenerate: `make generate` → verify `make lint` + `make test` pass
 - [x] AC: `make test` passes, `make build` passes, README example works with minimal payload
 - [x] **Commit:** `79e4da9`
+
+## [x] NEVER-DONE — Run 11-point self-improvement audit (2026-07-19 16:50 UTC)
+- [x] Tick: head=ca60386, 34/34 tests, CI green, ruff clean
+- [x] Audit findings below → 5 tasks created
+
+---
+
+## NEVER-DONE Audit Findings (2026-07-19 16:50 UTC)
+
+| # | Check | Result | Finding |
+|---|-------|--------|---------|
+| 1 | SPEC ALIGNMENT | PASS | Specs live in sibling `protocol/` repo. Protocol generated via `make generate`. No local drift. |
+| 2 | DOC COVERAGE | **GAP** | CONTRIBUTING.md missing |
+| 3 | TEST GAPS | **GAP** | middleware.py (65 lines) untested; testbed.py (115 lines) untested |
+| 4 | PACKAGE UPGRADES | **GAP** | pydantic-core 2.46.4→2.47.0; websockets 16.1→16.1.1; setuptools 79.0.1→83.0.0 |
+| 5 | PITFALL HUNT | PASS | No bare excepts, no TODOs/FIXMEs, .pytest_cache gitignored |
+| 6 | PERFORMANCE | N/A | Library SDK — perf is user-controlled |
+| 7 | ENDPOINT VERIFICATION | N/A | Library SDK — users create their own servers. All 6 routes implemented in harness.py |
+| 8 | CI/CD HEALTH | PASS | Last 3 CI runs all success |
+| 9 | DUCKBRAIN SYNC | **GAP** | Stale: last_tick 02:23Z, head 0a132d1 vs actual ca60386 |
+| 10 | CODE QUALITY | PASS | Ruff clean, no TODOs, longest file 308 lines |
+| 11 | MIDDLE-OUT WIRING | PASS | Library SDK — users wire. Examples import clean. Router + middleware exposed. |
+
+---
+
+## [ ] DOC-ND — Add CONTRIBUTING.md
+- [ ] Create CONTRIBUTING.md with: setup instructions, `make` targets, test workflow, PR process, protocol regeneration via `make generate`
+- [ ] AC: file exists, covers setup + test + PR flow
+
+## [ ] TEST-ND — Add tests for middleware.py
+- [ ] middleware.py: BaseHTTPMiddleware request logging (65 lines, 0 tests)
+- [ ] Test: verify request_id header forwarded, X-Request-ID set, request logging calls
+- [ ] AC: `make test` passes with new tests, coverage >80% on middleware.py
+
+## [ ] TEST-ND — Add tests for testbed.py
+- [ ] testbed.py: MockHermes + decision assertions (115 lines, 0 tests)
+- [ ] Note: testbed IS test infrastructure, but testing it prevents silent regressions
+- [ ] AC: mock send_message/send_result flow + decision assertion helpers work correctly
+
+## [ ] DEPS-ND — Upgrade pydantic-core 2.46.4 → 2.47.0
+- [ ] Run: `uv pip install --python .venv/bin/python3 --upgrade pydantic-core`
+- [ ] Verify: `make build && make test` passes
+- [ ] If tests fail, investigate breaking changes; downgrade if necessary
+- [ ] AC: 34/34 tests pass, pydantic-core at 2.47.0
+
+## [ ] DUCKBRAIN-ND — Sync project status to DuckBrain
+- [ ] Write current state: head ca60386, 34/34 tests, CI green, audit findings documented
+- [ ] AC: `/project/sdk-python/status` reflects current state
