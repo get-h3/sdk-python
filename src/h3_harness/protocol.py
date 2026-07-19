@@ -135,7 +135,7 @@ class SessionState(BaseModel):
 
 class Config(BaseModel):
     max_iterations: int
-    timeout_seconds: int
+    timeout_seconds: int = 300
     max_tool_calls_per_turn: int | None = None
     project_dir: str | None = None
     temperature: float | None = None
