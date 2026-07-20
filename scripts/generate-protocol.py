@@ -101,6 +101,13 @@ LENIENT_DEFAULTS: dict[str, dict[str, str]] = {
 FIELD_OVERRIDES: dict[str, dict[str, str]] = {
     "Wait": {"duration_seconds": "duration_seconds: int | None = Field(default=None, ge=1)"},
     "ResultPayload": {"duration_ms": "duration_ms: int | None = Field(default=None, ge=0)"},
+    "Message": {"timestamp": "timestamp: str | None = None"},
+    "Identity": {
+        "user_id": "user_id: str | None = None",
+        "user_name": "user_name: str | None = None",
+    },
+    "SessionState": {"started_at": "started_at: str | None = None"},
+    "Config": {"max_iterations": "max_iterations: int | None = None"},
 }
 
 
