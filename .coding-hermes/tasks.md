@@ -94,9 +94,13 @@
 - [x] AC: `make test` passes, `make build` passes, README example works with minimal payload
 - [x] **Commit:** `79e4da9`
 
-## [x] NEVER-DONE — Run 11-point self-improvement audit (2026-07-19 16:50 UTC)
-- [x] Tick: head=ca60386, 34/34 tests, CI green, ruff clean
-- [x] Audit findings below → 5 tasks created
+## [ ] NEVER-DONE — Run 11-point self-improvement audit (2026-07-19 20:43 UTC)
+
+Perpetual audit engine. Every time the board is empty, run the 11 checks:
+spec alignment, doc coverage, test gaps, package upgrades, pitfall hunt,
+performance audit, endpoint verification, CI/CD health, DuckBrain sync,
+code quality, middle-out wiring. Create a task for EVERY gap found.
+This task is never complete — the audit always finds something.
 
 ---
 
