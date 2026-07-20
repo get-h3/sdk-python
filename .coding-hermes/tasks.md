@@ -104,28 +104,27 @@ This task is never complete — the audit always finds something.
 
 ---
 
-## NEVER-DONE Audit Findings (2026-07-20 14:10 UTC)
+## NEVER-DONE Audit Findings (2026-07-20 16:55 UTC)
 
 | # | Check | Result | Finding |
 |---|-------|--------|---------|
-| 1 | SPEC ALIGNMENT | **GAP** | `make generate` produces a diff — strips Optional from 5 fields (Message.timestamp, Identity.user_id, Identity.user_name, SessionState.started_at, Config.max_iterations). LENIENT_DEFAULTS needs FIELD_OVERRIDES entries. |
-| 2 | DOC COVERAGE | PASS | CONTRIBUTING.md, README.md, AGENTS.md all current. README has quickstart + 3 examples. |
-| 3 | TEST GAPS | PASS | 54/54 tests pass. All modules covered (protocol, harness, middleware, testbed, examples). |
-| 4 | PACKAGE UPGRADES | **FIXED** | pydantic-core now at 2.47.0 (DEPS-ND resolved — upgraded transitively). setuptools 82.0.1, websockets 16.0. All deps current. |
-| 5 | PITFALL HUNT | PASS | No project TODOs/FIXMEs/HACKs. Ruff clean on src/ + tests/. No bare excepts. |
-| 6 | PERFORMANCE | N/A | Library SDK — perf is user-controlled |
-| 7 | ENDPOINT VERIFICATION | N/A | Library SDK — users create their own endpoints |
-| 8 | CI/CD HEALTH | PASS | Last 5 CI runs all success. 0 unpushed commits. |
-| 9 | DUCKBRAIN SYNC | **FIXED** | sdk-python namespace exists (4 entries). Status updated: head=64ae951, tests=54, DEPS-ND resolved. |
-| 10 | CODE QUALITY | PASS | Ruff clean, build OK. Hilo: 10 files, 43 edges, all orphans (expected for flat library). Top deps: fastapi(6), h3_harness(4). |
-| 11 | MIDDLE-OUT WIRING | PASS | `from h3_harness import ...` clean. 3 examples importable. Router + middleware + testbed exposed. |
+| 1 | SPEC ALIGNMENT | **FIXED** | GAP-ND resolved this tick — `make generate` idempotent. ea0964e. |
+| 2 | DOC COVERAGE | PASS | CONTRIBUTING.md, README.md, AGENTS.md all current. |
+| 3 | TEST GAPS | PASS | 54/54 tests pass. All 4 source modules have dedicated test files. |
+| 4 | PACKAGE UPGRADES | **BLOCKED** | pydantic-core 2.47.0 incompatible — pydantic 2.13.4 pins pydantic-core==2.46.4 exactly. Prior tick's "resolved" claim was VIRTUAL_ENV pollution (totalstack venv, not sdk-python). Upgraded + reverted → pydantic raises SystemError. websockets 16.1→16.1.1 (minor, low priority). DEPS-ND remains genuinely blocked. |
+| 5 | PITFALL HUNT | PASS | No TODOs/FIXMEs/HACKs. Ruff clean. |
+| 6 | PERFORMANCE | N/A | Library SDK — perf is user-controlled. |
+| 7 | ENDPOINT VERIFICATION | N/A | Library SDK — users create their own endpoints. |
+| 8 | CI/CD HEALTH | PASS | Last 3 runs all success (get-h3/sdk-python). 1 unpushed commit (board update pending). |
+| 9 | DUCKBRAIN SYNC | **FIXED** | Updating head=ea0964e, tests=54, GAP-ND complete, DEPS-ND still genuinely blocked. |
+| 10 | CODE QUALITY | PASS | Ruff clean, build OK. Hilo: 10 files, 43 edges (flat library — expected orphans). |
+| 11 | MIDDLE-OUT WIRING | PASS | All imports work via .venv. 3 examples importable. Router + middleware + testbed exposed. |
 
 ### Actions taken this tick
-- **DEPS-ND**: Closed — pydantic-core at 2.47.0 (resolved transitively, blocked constraint was stale)
-- **SPEC ALIGNMENT**: Identified gap — `make generate` strips 5 lenient Optional fields. Created GAP-ND task.
-- **DuckBrain**: Updated `/project/sdk-python/status` with current state (head, tests, deps)
-- **Verification**: 54/54 tests pass, lint clean, CI green (5/5), 0 unpushed, build OK
-- **Restored**: protocol.py reverted after generation test (no diff committed)
+- **GAP-ND**: Resolved — added 5 FIELD_OVERRIDES entries in generate-protocol.py. `make generate` → zero diff. Commit ea0964e.
+- **DEPS-ND**: Re-verified — still genuinely blocked. Prior tick's "resolved" claim was a VIRTUAL_ENV pollution false positive. pydantic 2.13.4 pins pydantic-core==2.46.4 exactly. Upgrading to 2.47.0 crashes pydantic at import time. Cannot be resolved until pydantic itself upgrades.
+- **DuckBrain**: Updating status with current head, tests, and corrected DEPS-ND status.
+- **Verification**: 54/54 tests pass, lint clean, guard PASS, `make generate` idempotent.
 
 ---
 
@@ -179,11 +178,12 @@ This task is never complete — the audit always finds something.
 - [x] Resolved 2026-07-20 14:10 UTC — pydantic-core now at 2.47.0 (upgraded transitively). setuptools at 82.0.1. websockets at 16.0. All deps current.
 - [x] **Commit:** (board update)
 
-## [ ] GAP-ND — Fix `make generate` idempotency: LENIENT_DEFAULTS stripped for 5 fields
-- [ ] `make generate` strips Optional from Message.timestamp, Identity.user_id, Identity.user_name, SessionState.started_at, Config.max_iterations
-- [ ] Root cause: These fields are required in JSON Schema but SDK wants them Optional. LENIENT_DEFAULTS provides values but doesn't wrap type in `| None`.
-- [ ] Fix: Add FIELD_OVERRIDES entries in scripts/generate-protocol.py to preserve `str | None = None` / `int | None = None`
-- [ ] AC: `make generate` produces no diff from committed protocol.py; `make lint` + `make test` pass
+## [x] GAP-ND — Fix `make generate` idempotency: LENIENT_DEFAULTS stripped for 5 fields
+- [x] `make generate` strips Optional from Message.timestamp, Identity.user_id, Identity.user_name, SessionState.started_at, Config.max_iterations
+- [x] Root cause: These fields are required in JSON Schema but SDK wants them Optional. LENIENT_DEFAULTS provides values but doesn't wrap type in `| None`.
+- [x] Fix: Add FIELD_OVERRIDES entries in scripts/generate-protocol.py to preserve `str | None = None` / `int | None = None`
+- [x] AC: `make generate` produces no diff from committed protocol.py; `make lint` + `make test` pass
+- [x] **Commit:** `ea0964e`
 
 ## [x] TEST-ND — Add tests for testbed.py
 - [x] Commit: `30f7d1c`
