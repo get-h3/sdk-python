@@ -127,14 +127,14 @@ class Model(BaseModel):
 
 class SessionState(BaseModel):
     cost_so_far: float = 0.0
-    started_at: str
+    started_at: str | None = None
     total_llm_calls: int = 0
     total_tool_calls: int = 0
     turn_count: int = 0
 
 
 class Config(BaseModel):
-    max_iterations: int
+    max_iterations: int | None = None
     timeout_seconds: int = 300
     max_tool_calls_per_turn: int | None = None
     project_dir: str | None = None
