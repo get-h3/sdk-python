@@ -92,15 +92,15 @@ class Attachment(BaseModel):
 class Message(BaseModel):
     content: str
     role: str = "user"
-    timestamp: str
+    timestamp: str | None = None
     attachments: list[Attachment] | None = None
 
 
 class Identity(BaseModel):
     chat_id: str
     platform: str
-    user_id: str
-    user_name: str
+    user_id: str | None = None
+    user_name: str | None = None
     thread_id: str | None = None
 
 
