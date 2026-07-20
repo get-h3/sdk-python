@@ -171,8 +171,19 @@ def create_router(harness: BaseHarness, *, prefix: str = "") -> APIRouter:
     # ── GET /v1/sessions/{session_id} ────────────────────────────
     @router.get("/v1/sessions/{session_id}", response_model=SessionResponse)
     async def get_session(session_id: str, request: Request):
-        # Note: Base harness doesn't track sessions by default.
-        # Subclasses may override via session store.
+        # If the harness provides session tracking, use it.
+        if hasattr(harness, "get_session_info"):
+            info = harness.get_session_info(session_id)  # type: ignore[union-attr]
+            if info is None:
+                raise HTTPException(status_code=404, detail="Session not found")
+            return SessionResponse(
+                session_id=session_id,
+                started_at="",
+                last_active="",
+                turn_count=info.get("turn_count", 0),
+                status=SessionStatus.ACTIVE,
+            )
+        # Default: no session tracking — always return ACTIVE.
         return SessionResponse(
             session_id=session_id,
             started_at="",
