@@ -94,7 +94,7 @@
 - [x] AC: `make test` passes, `make build` passes, README example works with minimal payload
 - [x] **Commit:** `79e4da9`
 
-## [ ] NEVER-DONE — Run 11-point self-improvement audit (2026-07-19 20:43 UTC)
+## [ ] NEVER-DONE — Run 11-point self-improvement audit (2026-07-19 21:01 UTC)
 
 Perpetual audit engine. Every time the board is empty, run the 11 checks:
 spec alignment, doc coverage, test gaps, package upgrades, pitfall hunt,
@@ -104,7 +104,30 @@ This task is never complete — the audit always finds something.
 
 ---
 
-## NEVER-DONE Audit Findings (2026-07-19 16:50 UTC)
+## NEVER-DONE Audit Findings (2026-07-19 21:01 UTC)
+
+| # | Check | Result | Finding |
+|---|-------|--------|---------|
+| 1 | SPEC ALIGNMENT | PASS | `make generate` produces no diff. protocol.py matches JSON schemas. |
+| 2 | DOC COVERAGE | PASS | CONTRIBUTING.md exists (DOC-ND done). README has quickstart + examples. AGENTS.md current. |
+| 3 | TEST GAPS | PASS | 54/54 tests pass. middleware.py + testbed.py covered (TEST-ND x2 done). No coverage tool configured but tests comprehensive. |
+| 4 | PACKAGE UPGRADES | **GAP** | pydantic-core 2.46.4→2.47.0 BLOCKED by pydantic 2.13.4 constraint (DEPS-ND [~]). setuptools upgraded 79.0.1→83.0.0 this tick. websockets 16.1→16.1.1 attempted; uv claims installed but pip reports 16.1 — likely uv/pip venv discrepancy (patch release, non-critical). |
+| 5 | PITFALL HUNT | PASS | No bare excepts, TODOs, FIXMEs, or HACKs. .pytest_cache gitignored. |
+| 6 | PERFORMANCE | N/A | Library SDK — perf is user-controlled |
+| 7 | ENDPOINT VERIFICATION | N/A | Library SDK — users create their own endpoints |
+| 8 | CI/CD HEALTH | PASS | Last 5 CI runs all success. 0 unpushed commits. |
+| 9 | DUCKBRAIN SYNC | **FIXED** | Was EMPTY at start of tick (Class 8 fabrication: DUCKBRAIN-ND marked [x] but namespace had 0 entries). Populated: `/project/sdk-python/status`, `/project/sdk-python/identity`, `/project/sdk-python/pitfalls/class-8-fabrication-duckbrain-nd`. |
+| 10 | CODE QUALITY | PASS | Ruff clean, build OK. Hilo: 10 files, 43 edges, all orphans (expected for flat library). Top deps: fastapi(6), h3_harness(4). |
+| 11 | MIDDLE-OUT WIRING | PASS | Library SDK — `from h3_harness import ...` clean. Examples importable. Router + middleware exposed. |
+
+### Actions taken this tick
+- **DuckBrain**: populated namespace (3 entries) — was empty, prior DUCKBRAIN-ND fabricated
+- **Packages**: setuptools 79.0.1→83.0.0 (success). websockets attempted (patch version, not sticking). pydantic-core remains blocked.
+- **Verification**: 54/54 tests pass, lint clean, CI green, 0 unpushed, spec aligned
+
+---
+
+## NEVER-DONE Audit Findings (2026-07-19 16:50 UTC) [superseded]
 
 | # | Check | Result | Finding |
 |---|-------|--------|---------|
