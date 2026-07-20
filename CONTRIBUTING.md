@@ -1,96 +1,136 @@
-# Contributing to H3 Harness SDK for Python
+# Contributing to H3 SDK for Python
 
-## Setup
+Python SDK for building H3-compliant agent harnesses. Implements the harness side of the H3 protocol using Pydantic + FastAPI.
+
+## Development Setup
 
 ```bash
-git clone https://github.com/get-h3/sdk-python.git
-cd sdk-python
-make install
+cd sdk-python/
+python -m venv .venv
+source .venv/bin/activate
+uv pip install -e ".[dev]"
 ```
 
-Requires Python 3.10+ and `uv`.
-
-## Development Workflow
-
-| Command | What it does |
-|---------|-------------|
-| `make install` | Create venv, install dev dependencies |
-| `make build` | Verify package imports cleanly |
-| `make test` | Run test suite (pytest, 34 tests) |
-| `make test-full` | Run tests with verbose output |
-| `make lint` | Ruff check (E, F, I, N, W, UP) |
-| `make fmt` | Ruff auto-format |
-| `make all` | install → lint → build → test |
-| `make generate` | Regenerate `protocol.py` from JSON Schema |
-
-## Project Structure
+## Package Structure
 
 ```
 sdk-python/
 ├── src/h3_harness/
-│   ├── __init__.py          # Public API exports
-│   ├── protocol.py          # Pydantic models (generated from get-h3/protocol)
-│   ├── harness.py           # BaseHarness ABC + FastAPI router
-│   ├── middleware.py         # Request logging middleware
-│   ├── testbed.py           # MockHermes for pytest
-│   └── examples/
-│       ├── echo.py           # Echo harness
-│       ├── minimal.py        # Minimal harness with health endpoint
-│       └── langchain_agent.py # LangChain integration
+│   ├── protocol.py    # Pydantic models (generated from protocol repo JSON Schema)
+│   ├── harness.py     # BaseHarness ABC + FastAPI router
+│   ├── middleware.py   # Request logging middleware
+│   └── testbed.py     # MockHermes for pytest
 ├── tests/
-│   ├── test_protocol.py      # Protocol serialization + validation
-│   └── test_harness.py       # Harness router endpoint tests
-├── scripts/
-│   └── generate-protocol.py  # JSON Schema → Pydantic code generator
-├── CONTRIBUTING.md
-├── README.md
-├── AGENTS.md
-├── Makefile
-└── pyproject.toml
+│   ├── test_protocol.py
+│   ├── test_harness.py
+│   └── test_testbed.py
+└── examples/
+    ├── echo/          # Echo harness (returns messages back)
+    ├── minimal/       # Bare-minimum example
+    └── langchain/     # LangChain integration demo
 ```
+
+## Before Making Changes
+
+### Run Tests
+
+```bash
+python -m pytest tests/ -v
+# 34 tests
+```
+
+### Run Lint + Type Check
+
+```bash
+ruff check src/ tests/
+mypy src/
+```
+
+### Run the Test Battery
+
+```bash
+# Start the echo example in one terminal:
+python examples/echo/main.py
+
+# In another terminal, run the compliance test battery:
+h3-test --endpoint http://localhost:9191
+# 43 compliance tests, exit code 0 = compliant
+```
+
+### Sync Protocol Types
+
+If the upstream protocol changed:
+
+```bash
+python scripts/sync_protocol.py
+```
+
+This regenerates `src/h3_harness/protocol.py` from `get-h3/protocol` schemas. Never hand-edit generated Pydantic models.
 
 ## Making Changes
 
-1. Create a feature branch from `main`
-2. Make your changes
-3. Run `make lint` and `make test` — both must pass
-4. If you changed the protocol spec, run `make generate` to regenerate `protocol.py`
-5. Submit a PR against `main`
+### BaseHarness Interface
 
-## Protocol Regeneration
+- `harness.py` defines the `BaseHarness` ABC with `on_process` and `on_result`
+- Changes to the ABC are MAJOR — they break all existing harnesses
+- New optional hooks should use separate mixins
 
-The `protocol.py` file is generated from the JSON Schema definitions in [get-h3/protocol](https://github.com/get-h3/protocol). When the protocol spec changes:
+### FastAPI Router
+
+- `create_router()` builds a FastAPI APIRouter with `/v1/health`, `/v1/process`, `/v1/result`
+- Must follow the H3 protocol exactly — see `get-h3/protocol/h3-protocol.yaml`
+- All endpoints log METHOD /path STATUS DURATION via middleware
+
+### Middleware
+
+- `middleware.py` uses FastAPI's `BaseHTTPMiddleware`
+- Logs structured request info without leaking credentials
+
+### Pydantic Models
+
+- Models use `Optional` types for protocol-optional fields
+- Validation must match JSON Schema constraints from `get-h3/protocol/schemas/v1/`
+- `model_dump(exclude_none=True)` for wire format compatibility
+
+## Quality Gates
+
+### Pre-Commit
 
 ```bash
-make generate
+ruff check src/ tests/      # Lint
+ruff format --check src/ tests/  # Format
+mypy src/                   # Type check
+python -m pytest tests/ -v  # Tests (34)
 ```
 
-This runs `scripts/generate-protocol.py`, applies ruff fixes, and formats the output. Verify with `make lint && make test`.
+### CI Pipeline
 
-## Testing
+GitHub Actions runs on every PR:
+1. Lint (ruff)
+2. Type check (mypy)
+3. Tests (pytest, 34 tests)
+4. `h3-test --endpoint http://localhost:9191` (against echo example)
 
-Tests use pytest with httpx `TestClient` for FastAPI route testing. The testbed (`MockHermes`) provides a lightweight harness runner for unit tests.
+All must pass.
+
+## Release
 
 ```bash
-# Run all tests
-make test
-
-# Run with verbose output
-make test-full
+git tag v1.0.0
+git push origin v1.0.0
+# CI publishes to PyPI automatically
 ```
 
-New features should include tests. Test files live in `tests/` and follow the pattern `test_<module>.py`.
+## Review Checklist
 
-## Code Style
+- [ ] `pytest tests/ -v` passes (34 tests)
+- [ ] `ruff check` passes
+- [ ] `mypy src/` passes
+- [ ] `h3-test --endpoint http://localhost:9191` passes against echo example
+- [ ] New Pydantic fields use `Optional` where appropriate
+- [ ] Protocol changes regenerated via `sync_protocol.py`
+- [ ] No hand-edits to generated types
 
-Python 3.10+, formatted with ruff. Type hints encouraged on public API surfaces.
+## Questions?
 
-## Quality Gate
-
-All PRs must pass the GitReins quality gate before merge. This includes lint, build, and test checks across Python 3.10, 3.11, and 3.12 via GitHub Actions CI.
-
-## References
-
-- H3 umbrella: [get-h3/h3](https://github.com/get-h3/h3)
-- Protocol spec: [get-h3/protocol](https://github.com/get-h3/protocol)
-- SDK spec: [specs/04-SDK-Libraries.md](https://github.com/get-h3/h3/blob/main/specs/04-SDK-Libraries.md)
+See the umbrella project at [get-h3/h3](https://github.com/get-h3/h3) for architecture, specs, and the cross-repo task board.
