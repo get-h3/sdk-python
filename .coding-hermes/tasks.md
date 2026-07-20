@@ -132,10 +132,11 @@
 - [~] pydantic-core 2.47.0 blocked by pydantic 2.13.4 version constraint; `uv lock --upgrade-package pydantic-core` resolves to 2.46.4
 - [~] Needs pydantic upgrade to unblock; defer until next pydantic release
 
-## [ ] TEST-ND — Add tests for testbed.py
-- [ ] testbed.py: MockHermes + decision assertions (115 lines, 0 tests)
-- [ ] Note: testbed IS test infrastructure, but testing it prevents silent regressions
-- [ ] AC: mock send_message/send_result flow + decision assertion helpers work correctly
+## [x] TEST-ND — Add tests for testbed.py
+- [x] Commit: `30f7d1c`
+- [x] 14 tests: 5 helper function tests + 9 MockHermes edge case tests
+- [x] Covers: _now_iso, _default_identity, _default_config, _default_session_state, _default_context, send_message edge cases, send_result with dict/custom ID, cancel with all CancelReason values, sequential calls, TEXT-returning on_result harness
+- [x] AC: `make test` passes (52/52), `make lint` passes, `gitreins guard` PASS
 
 ## [x] DUCKBRAIN-ND — Sync project status to DuckBrain
 - [x] Synced: 40/40 tests, 2 commits ahead of origin, middleware tests done, DEPS-ND blocked (pydantic constraint)
