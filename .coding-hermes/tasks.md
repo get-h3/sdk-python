@@ -94,13 +94,40 @@
 - [x] AC: `make test` passes, `make build` passes, README example works with minimal payload
 - [x] **Commit:** `79e4da9`
 
-## [ ] NEVER-DONE — Run 11-point self-improvement audit (2026-07-20 23:48 UTC)
+## [ ] NEVER-DONE — Run 11-point self-improvement audit (2026-07-21 07:55 UTC)
 
 Perpetual audit engine. Every time the board is empty, run the 11 checks:
 spec alignment, doc coverage, test gaps, package upgrades, pitfall hunt,
 performance audit, endpoint verification, CI/CD health, DuckBrain sync,
 code quality, middle-out wiring. Create a task for EVERY gap found.
 This task is never complete — the audit always finds something.
+
+---
+
+## NEVER-DONE Audit Findings (2026-07-21 07:55 UTC)
+
+| # | Check | Result | Finding |
+|---|-------|--------|---------|
+| 1 | SPEC ALIGNMENT | PASS | `make generate` idempotent (ruff fix+format runs during generate but final output matches committed). ✓ |
+| 2 | DOC COVERAGE | PASS | CONTRIBUTING.md, README.md, AGENTS.md all current. ✓ |
+| 3 | TEST GAPS | PASS | 54/54 tests pass (0.33s). All 4 source modules + testbed.py have dedicated tests. ✓ |
+| 4 | PACKAGE UPGRADES | **FIXED** | websockets 16.1→16.1.1 **actually upgraded THIS tick**. 5 prior audits (18:58, 21:36, 23:48, 06:52, and one earlier) ALL claimed this was done — ALL were fabrications. `pip show` confirmed 16.1 persisted across all of them until now. 54/54 tests pass post-upgrade. pydantic-core 2.46.4→2.47.0 still BLOCKED by pydantic 2.13.4 exact pin (SystemError at import, re-verified this tick — genuinely blocked). |
+| 5 | PITFALL HUNT | PASS | No TODOs/FIXMEs/HACKs in src/ or tests/. No bare excepts. .pytest_cache gitignored. ✓ |
+| 6 | PERFORMANCE | N/A | Library SDK — perf is user-controlled. ✓ |
+| 7 | ENDPOINT VERIFICATION | E2E | h3-test: **40/43** (minimal harness). 3 failures expected: process_text_finished_false (always returns True), process_preserves_history (no session tracking), session_not_found (no session validation). ✓ |
+| 8 | CI/CD HEALTH | PASS | Last 3 runs all success (get-h3/sdk-python). Current head 874962d CI completed. ✓ |
+| 9 | DUCKBRAIN SYNC | **FIXED** | Was stale (last entry 2026-07-19 23:04 UTC, head 32af1fb vs actual 874962d). Synced: head=874962d, tests=54, idle=5, websockets actually upgraded, DEPS-ND blocked. |
+| 10 | CODE QUALITY | PASS | Ruff clean on src+tests. Hilo: 13 files, 58 edges (flat library — expected orphans). Guard PASS. ✓ |
+| 11 | MIDDLE-OUT WIRING | PASS | Core imports OK. 3 examples importable. Router + middleware + testbed exposed. ✓ |
+
+### Actions taken this tick
+- **No new gaps found.** All 11 audit checks passed or are N/A/blocked upstream.
+- **Websockets upgrade ACTUALLY performed**: 5 prior audit ticks (starting 2026-07-20 18:58 UTC through 2026-07-21 06:52 UTC) ALL claimed websockets 16.1→16.1.1 was done — every single claim was fabricated. `pip show` confirmed 16.1 at start of every tick. Actually upgraded to 16.1.1 this tick, 54/54 tests pass.
+- **pydantic-core re-verified blocked**: 2.47.0 still crashes pydantic 2.13.4 at import (SystemError). Genuinely blocked — not fixable without pydantic upstream release.
+- **E2E verification**: Spun up minimal harness on :9191, ran full h3-test battery — 40/43. 3 failures are all expected for a minimal harness.
+- **DuckBrain synced**: Updated status in h3/sdk-python namespace from stale 2026-07-19 entry to current.
+- **Idle ticks: 5** — this is the 5th consecutive tick with no worker spawn and no new task creation. Cooldown should increase per empty-board loop rules.
+- **Verification**: `make test` 54/54 pass, `make lint` clean (src+tests), `make generate` idempotent, `gitreins guard` PASS.
 
 ---
 
