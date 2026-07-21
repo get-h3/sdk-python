@@ -94,7 +94,7 @@
 - [x] AC: `make test` passes, `make build` passes, README example works with minimal payload
 - [x] **Commit:** `79e4da9`
 
-## [ ] NEVER-DONE — Run 11-point self-improvement audit (2026-07-20 14:10 UTC)
+## [ ] NEVER-DONE — Run 11-point self-improvement audit (2026-07-20 21:36 UTC)
 
 Perpetual audit engine. Every time the board is empty, run the 11 checks:
 spec alignment, doc coverage, test gaps, package upgrades, pitfall hunt,
@@ -104,7 +104,32 @@ This task is never complete — the audit always finds something.
 
 ---
 
-## NEVER-DONE Audit Findings (2026-07-20 18:58 UTC)
+## NEVER-DONE Audit Findings (2026-07-20 21:36 UTC)
+
+| # | Check | Result | Finding |
+|---|-------|--------|---------|
+| 1 | SPEC ALIGNMENT | PASS | `make generate` idempotent — zero diff in protocol.py. ✓ |
+| 2 | DOC COVERAGE | PASS | CONTRIBUTING.md, README.md, AGENTS.md all current. ✓ |
+| 3 | TEST GAPS | PASS | 54/54 tests pass (0.29s). All 4 source modules + testbed.py have dedicated tests. ✓ |
+| 4 | PACKAGE UPGRADES | **PARTIAL** | websockets 16.1→16.1.1 upgraded this tick (54 tests pass). pydantic-core 2.46.4→2.47.0 still BLOCKED by pydantic 2.13.4 exact pin. |
+| 5 | PITFALL HUNT | PASS | No TODOs/FIXMEs/HACKs. No bare excepts. .pytest_cache gitignored. ✓ |
+| 6 | PERFORMANCE | N/A | Library SDK — perf is user-controlled. ✓ |
+| 7 | ENDPOINT VERIFICATION | N/A | Library SDK — users create their own endpoints. ✓ |
+| 8 | CI/CD HEALTH | PASS | All 10 recent runs success (get-h3/sdk-python). Current head f85b579 unpushed (from prior tick). ✓ |
+| 9 | DUCKBRAIN SYNC | **FIXED** | Was stale (last entry 16:55 UTC, head ea0964e vs actual f85b579). Synced: head=f85b579, tests=54, idle=0, DEPS-ND blocked. |
+| 10 | CODE QUALITY | PASS | Ruff clean on src+tests. 5 E501 in scripts/generate-protocol.py (non-source, minor). Hilo: 13 files, 58 edges (flat library — expected orphans). Guard PASS. ✓ |
+| 11 | MIDDLE-OUT WIRING | PASS | Core imports OK. 3 examples importable as standalone scripts. Router + middleware + testbed exposed. ✓ |
+
+### Actions taken this tick
+- **No new gaps found.** All 11 audit checks passed or are N/A/blocked upstream.
+- **Websockets upgraded**: 16.1→16.1.1. No breaking changes. 54/54 tests pass.
+- **DuckBrain synced**: Updated status in sdk-python namespace with current head, tests, and DEPS-ND status.
+- **Prior tick audit (18:58) investigation**: Claimed websockets 16.1→16.1.1 but `pip list` showed 16.1 at start of this tick. Performed the actual upgrade this tick.
+- **Verification**: `make test` 54/54 pass, `make lint` clean (src+tests), `make generate` idempotent, `gitreins guard` PASS.
+
+---
+
+## NEVER-DONE Audit Findings (2026-07-20 18:58 UTC) [superseded]
 
 | # | Check | Result | Finding |
 |---|-------|--------|---------|
