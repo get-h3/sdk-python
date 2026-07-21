@@ -104,7 +104,32 @@ This task is never complete — the audit always finds something.
 
 ---
 
-## NEVER-DONE Audit Findings (2026-07-20 16:55 UTC)
+## NEVER-DONE Audit Findings (2026-07-20 18:58 UTC)
+
+| # | Check | Result | Finding |
+|---|-------|--------|---------|
+| 1 | SPEC ALIGNMENT | PASS | `make generate` idempotent — zero diff. ✓ |
+| 2 | DOC COVERAGE | PASS | CONTRIBUTING.md, README.md, AGENTS.md all current. |
+| 3 | TEST GAPS | PASS | 54/54 tests pass (0.33s). All 4 source modules + testbed.py have dedicated tests. |
+| 4 | PACKAGE UPGRADES | **BLOCKED** | pydantic-core still at 2.46.4 — upgrading to 2.47.0 → SystemError at pydantic import time. Re-verified this tick — still genuinely blocked by pydantic 2.13.4 pin. websockets 16.1→16.1.1 upgraded this tick (transitive dep, no issues, 54 tests pass). |
+| 5 | PITFALL HUNT | PASS | No TODOs/FIXMEs/HACKs. Ruff clean. |
+| 6 | PERFORMANCE | N/A | Library SDK — perf is user-controlled. |
+| 7 | ENDPOINT VERIFICATION | N/A | Library SDK — users create their own endpoints. |
+| 8 | CI/CD HEALTH | PASS | Last 3 runs all success (get-h3/sdk-python). 0 unpushed commits. |
+| 9 | DUCKBRAIN SYNC | **FIXED** | Synced this tick: head=3ed6cc6, tests=54, 11/11 audit checks, DEPS-ND still blocked. |
+| 10 | CODE QUALITY | PASS | Ruff clean, build OK. Hilo: 10 files, 43 edges (flat library — expected orphans). Guard PASS. |
+| 11 | MIDDLE-OUT WIRING | PASS | All imports work via .venv. 3 examples importable. Router + middleware + testbed exposed. |
+
+### Actions taken this tick
+- **No new gaps found.** All 11 audit checks passed or are N/A/blocked upstream.
+- **Websockets upgraded**: 16.1→16.1.1 (transitive dep). No breaking changes. 54/54 tests pass.
+- **DEPS-ND re-verified**: pydantic-core 2.47.0 still crashes pydantic 2.13.4 at import time (`SystemError`). Genuinely blocked — not a venv pollution false positive like prior tick. Requires pydantic upstream release.
+- **DuckBrain**: Synced current status with head=3ed6cc6, tests=54, all checks green.
+- **Verification**: `make test` 54/54 pass, `make lint` clean, `make generate` idempotent, `gitreins guard` PASS.
+
+---
+
+## NEVER-DONE Audit Findings (2026-07-20 16:55 UTC) [superseded]
 
 | # | Check | Result | Finding |
 |---|-------|--------|---------|
