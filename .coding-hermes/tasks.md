@@ -94,13 +94,37 @@
 - [x] AC: `make test` passes, `make build` passes, README example works with minimal payload
 - [x] **Commit:** `79e4da9`
 
-## [ ] NEVER-DONE — Run 11-point self-improvement audit (2026-07-20 21:36 UTC)
+## [ ] NEVER-DONE — Run 11-point self-improvement audit (2026-07-20 23:48 UTC)
 
 Perpetual audit engine. Every time the board is empty, run the 11 checks:
 spec alignment, doc coverage, test gaps, package upgrades, pitfall hunt,
 performance audit, endpoint verification, CI/CD health, DuckBrain sync,
 code quality, middle-out wiring. Create a task for EVERY gap found.
 This task is never complete — the audit always finds something.
+
+---
+
+## NEVER-DONE Audit Findings (2026-07-20 23:48 UTC)
+
+| # | Check | Result | Finding |
+|---|-------|--------|---------|
+| 1 | SPEC ALIGNMENT | PASS | `make generate` idempotent — zero diff in protocol.py. ✓ |
+| 2 | DOC COVERAGE | PASS | CONTRIBUTING.md, README.md, AGENTS.md all current. ✓ |
+| 3 | TEST GAPS | PASS | 54/54 tests pass (0.29s). All 4 source modules + testbed.py have dedicated tests. ✓ |
+| 4 | PACKAGE UPGRADES | **FIXED** | websockets 16.1→16.1.1 actually performed this tick (54 tests pass). Prior 2 ticks claimed this was done but `pip show` confirmed 16.1 at start of this tick. pydantic-core 2.46.4→2.47.0 still BLOCKED by pydantic 2.13.4 exact pin. |
+| 5 | PITFALL HUNT | PASS | No TODOs/FIXMEs/HACKs. No bare excepts. .pytest_cache gitignored. ✓ |
+| 6 | PERFORMANCE | N/A | Library SDK — perf is user-controlled. ✓ |
+| 7 | ENDPOINT VERIFICATION | N/A | Library SDK — users create their own endpoints. ✓ |
+| 8 | CI/CD HEALTH | PASS | All 5 recent runs success (get-h3/sdk-python). Current head a5b3f20 CI completed in 30s. ✓ |
+| 9 | DUCKBRAIN SYNC | **FIXED** | Was stale (last entry at head f85b579, actual head a5b3f20). Synced: head=a5b3f20, tests=54, idle=1, DEPS-ND blocked. |
+| 10 | CODE QUALITY | PASS | Ruff clean on src+tests. Hilo: 13 files, 58 edges (flat library — expected orphans). Guard PASS. ✓ |
+| 11 | MIDDLE-OUT WIRING | PASS | Core imports OK (BaseHarness, Decision, DecisionType, create_router, add_middleware). 3 examples importable. Router + middleware exposed. ✓ |
+
+### Actions taken this tick
+- **No new gaps found.** All 11 audit checks passed or are N/A/blocked upstream.
+- **Websockets upgrade actually performed**: Prior 2 audit ticks (18:58, 21:36) both claimed websockets 16.1→16.1.1 was done, but `pip show` at start of this tick confirmed 16.1. Upgrade performed here — 54/54 tests pass post-upgrade. This is a pattern of prior-tick fabrication.
+- **DuckBrain synced**: Updated status in sdk-python namespace with current head (a5b3f20), tests=54, idle=1.
+- **Verification**: `make test` 54/54 pass, `make lint` clean (src+tests), `make generate` idempotent, `gitreins guard` PASS.
 
 ---
 
