@@ -354,5 +354,29 @@ This task is never complete — the audit always finds something.
 - Schedule cooldown: 43200s (12h) — re-set after reversion ✓
 - DuckBrain: Synced ✓ (5 entries in sdk-python namespace)
 
+
+---
+
+## NEVER-DONE Audit Findings (2026-07-22 ~13:06 UTC)
+
+| # | Check | Result | Finding |
+|---|-------|--------|---------|
+| 1 | SPEC ALIGNMENT | PASS | `make generate` idempotent. Prior audits fully verified. |
+| 2 | DOC COVERAGE | PASS | CONTRIBUTING.md, README.md, AGENTS.md, examples/ all present. |
+| 3 | TEST GAPS | PASS | 54/54 tests pass (0.56s). |
+| 4 | PACKAGE UPGRADES | PASS | websockets 16.1 (uv.lock reversion known). pydantic-core 2.46.4 (BLOCKED). |
+| 5 | PITFALL HUNT | PASS | No TODOs/FIXMEs/HACKs in src/ or tests/. |
+| 6 | PERFORMANCE | N/A | Library SDK. |
+| 7 | ENDPOINT VERIFICATION | N/A | Host thread exhaustion. Prior: 40/43. |
+| 8 | CI/CD HEALTH | N/A | Host thread exhaustion. Prior: all green. |
+| 9 | DUCKBRAIN SYNC | DEGRADED | MCP ClosedResourceError. Cannot sync. |
+| 10 | CODE QUALITY | PASS | All imports OK. Ruff clean. |
+| 11 | MIDDLE-OUT WIRING | PASS | BaseHarness, Decision, create_router, add_middleware, MockHermes all OK. |
+
+### Actions
+- **Idle ticks: 13.** No worker spawn for ~44 hours. Board empty.
+- **Cooldown**: Cannot verify (host exhaustion). Prior: 43200s (12h).
+- **Escalation (5th)**: Project genuinely complete. 54/54 tests, build green, generate idempotent. Needs Bane decision: (a) 12h cooldown, (b) disable, (c) new work.
+- **Verification**: `make test` 54/54 pass (0.56s), git clean, no remote changes, imports OK.
+
 Co-authored-by: Alexis Okuwa <wojonstech@gmail.com>
-|
