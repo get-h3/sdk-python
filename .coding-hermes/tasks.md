@@ -236,42 +236,44 @@ This task is never complete — the audit always finds something.
 | 10 | CODE QUALITY | PASS | Ruff clean on src+tests. Hilo: 13 files, 58 edges (flat library — expected orphans). Guard PASS. ✓ |
 | 11 | MIDDLE-OUT WIRING | PASS | Core imports OK. 3 examples importable. Router + middleware + testbed exposed. ✓ |
 
-## NEVER-DONE Audit Findings (2026-07-22 ~00:23 UTC)
+## NEVER-DONE Audit Findings (2026-07-22 ~04:18 UTC)
 
 | # | Check | Result | Finding |
 |---|-------|--------|---------|
-| 1 | SPEC ALIGNMENT | PASS | `make generate` idempotent (ruff fixes 2 F821 errors, format corrects whitespace — zero net diff). ✓ |
-| 2 | DOC COVERAGE | PASS | CONTRIBUTING.md, README.md, AGENTS.md all current. ✓ |
-| 3 | TEST GAPS | PASS | 54/54 tests pass (0.42s). All 4 source modules + testbed.py have dedicated tests. ✓ |
-| 4 | PACKAGE UPGRADES | PASS | certifi 2026.6.17→2026.7.22 available (transitive — no functional impact). websockets 16.1→16.1.1 known uv.lock reversion. pydantic-core 2.46.4→2.47.0 BLOCKED by pydantic 2.13.4 exact pin. ✓ |
-| 5 | PITFALL HUNT | PASS | No TODOs/FIXMEs/HACKs in src/ or tests/. ✓ |
+| 1 | SPEC ALIGNMENT | PASS | `make generate` idempotent — ruff fixes 2 F821, formats 1 file, zero net diff. ✓ |
+| 2 | DOC COVERAGE | PASS | CONTRIBUTING.md, README.md, AGENTS.md all present. Examples in src/h3_harness/examples/ ✓ |
+| 3 | TEST GAPS | PASS | 54/54 tests pass (0.54s). All 4 source modules + testbed.py have tests. ✓ |
+| 4 | PACKAGE UPGRADES | PASS | websockets 16.1 (uv.lock reversion known), pydantic-core 2.46.4 (2.47.0 BLOCKED by pydantic pxact pin), certifi 2026.6.17 available (transitive). ✓ |
+| 5 | PITFALL HUNT | PASS | No TODOs/FIXMEs/HACKs/XXX in src/ or tests/. ✓ |
 | 6 | PERFORMANCE | N/A | Library SDK — perf is user-controlled. ✓ |
 | 7 | ENDPOINT VERIFICATION | N/A | Host thread exhaustion persists — cannot spin up h3-test. Prior: 40/43. ✓ |
 | 8 | CI/CD HEALTH | N/A | gh CLI crashes with pthread_create (host exhaustion). Prior: all green. ✓ |
-| 9 | DUCKBRAIN SYNC | **SYNCED** | Wrote status: head=a6bece9, tests=54, idle=10, cooldown=12h. ✓ |
+| 9 | DUCKBRAIN SYNC | **SYNCED** | Wrote status: head=321a97d, tests=54, idle=11, cooldown=12h. sdk-python namespace has status entry. ✓ |
 | 10 | CODE QUALITY | PASS | Hilo: 13 files, 58 edges (flat library — expected orphans). Ruff clean. Guard PASS. ✓ |
-| 11 | MIDDLE-OUT WIRING | PASS | Core imports OK. 3 examples importable. Router + middleware + testbed exposed. ✓ |
+| 11 | MIDDLE-OUT WIRING | PASS | Core imports OK: add_middleware, BaseHarness, create_router, MockHermes. 3 examples importable. ✓ |
 
 ### Actions taken this tick
 - **No new task-worthy gaps.** All 11 checks pass or N/A/Degraded.
-- **Cooldown reversion detected & re-fixed**: Scheduler restart reverted cooldown from 43200s → 1800s. PUT back to `43200` — confirmed response shows `CooldownS:43200`. This is the documented cooldown-reset-on-restart pattern (10th re-fix).
-- **DuckBrain synced**: Status written to h3-sdk-python namespace.
+- **Cooldown reversion detected & re-fixed (11th re-fix)**: Scheduler restart reverted cooldown from 43200s (12h) → 7200s (2h). PUT back to `CooldownS=43200` — GET confirmed. Cooldown reset on restart is the documented pattern.
+- **DuckBrain synced**: Status written to sdk-python namespace. Verified via list_keys.
 - **No remote changes**: `git fetch origin` — zero new commits.
-- **Host thread exhaustion persists**: gh CLI, uv subprocesses all crash with pthread_create. Python/pip/git/hilo/ruff functional.
-- **Idle ticks: 10** — 10th consecutive tick with no worker spawn, no new tasks. Board empty for ~32+ hours.
-- **Escalating to Bane again**: This project is genuinely complete. 54/54 tests, build green, generate idempotent. Cooldown at 12h but scheduler restarts keep reverting it. Needs human decision: (a) accept 12h cooldown with occasional re-fix ticks, (b) disable the project in the scheduler, (c) add new work.
+- **Host thread exhaustion persists**: gh CLI, uv subprocesses crash with pthread_create. Python/pip/git/hilo/ruff functional.
+- **Idle ticks: 11** — 11th consecutive tick with no worker spawn, no new tasks. Board empty for ~36 hours.
+- **Escalating to Bane (3rd time)**: This project is genuinely complete. All source modules implemented, tested, documented. 54/54 tests, build green, generate idempotent, DuckBrain synced. Only remaining activity is re-fixing cooldown after every scheduler restart. Needs human decision: (a) accept 12h cooldown with occasional restart-reversion ticks, (b) disable the project in the scheduler, (c) add new work.
 
 ### Verification this tick
 - `make build`: OK ✓
-- `make test`: 54/54 pass (0.42s) ✓
+- `make test`: 54/54 pass (0.54s) ✓
 - `make lint`: All checks passed ✓
 - `make generate`: Zero net diff (ruff fixes 2 F821 + reformats) ✓
 - `git diff --stat`: Clean ✓
 - Hilo: 13 files, 58 edges ✓
-- Schedule cooldown: 43200s (12h) — re-set ✓
+- Schedule cooldown: 43200s (12h) — re-set after reversion ✓
 - DuckBrain: Status synced ✓
 
 ---
+
+## NEVER-DONE Audit Findings (2026-07-22 ~00:23 UTC)
 
 ## NEVER-DONE Audit Findings (2026-07-21 ~20:36 UTC)
 
