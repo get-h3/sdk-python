@@ -92,15 +92,15 @@ class Attachment(BaseModel):
 class Message(BaseModel):
     content: str
     role: str = "user"
-    timestamp: str | None = None
+    timestamp: str
     attachments: list[Attachment] | None = None
 
 
 class Identity(BaseModel):
     chat_id: str
     platform: str
-    user_id: str | None = None
-    user_name: str | None = None
+    user_id: str
+    user_name: str
     thread_id: str | None = None
 
 
@@ -127,18 +127,18 @@ class Model(BaseModel):
 
 class SessionState(BaseModel):
     cost_so_far: float = 0.0
-    started_at: str | None = None
+    started_at: str
     total_llm_calls: int = 0
     total_tool_calls: int = 0
     turn_count: int = 0
 
 
 class Config(BaseModel):
-    max_iterations: int | None = None
-    timeout_seconds: int = 300
-    max_tool_calls_per_turn: int | None = None
+    max_iterations: int = Field(ge=1)
+    timeout_seconds: int = Field(default=300, ge=1)
+    max_tool_calls_per_turn: int | None = Field(default=None, ge=0)
     project_dir: str | None = None
-    temperature: float | None = None
+    temperature: float | None = Field(default=None, ge=0.0, le=2.0)
 
 
 class Context(BaseModel):
@@ -167,9 +167,9 @@ class LLMCall(BaseModel):
 
     messages: list[dict[str, Any]]
     model: str
-    max_tokens: int | None = None
+    max_tokens: int | None = Field(default=None, ge=1)
     system_prompt: str | None = None
-    temperature: float | None = None
+    temperature: float | None = Field(default=None, ge=0.0, le=2.0)
 
 
 class TextResponse(BaseModel):
