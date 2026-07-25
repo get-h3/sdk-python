@@ -1,3 +1,4 @@
+
 # H3 Python SDK — Model Router Task Matrix
 
 **Core purpose:** Python SDK for the H3 protocol — Pydantic models, BaseHarness ABC, FastAPI router, test bed (MockHermes), pytest suite (98 tests). Package: `hermes-h3-sdk`.
@@ -10,11 +11,13 @@
 | ID | Task | Pri | Cpx | Deps | Tags | Model | Reasoning | Fallback |
 |----|------|-----|-----|------|------|-------|-----------|----------|
 | QV-SDK-03 | ~~Python Pydantic validation matches JSON Schema~~ | ✅ Done | 2 | 856922c | ++testing, ++python | DeepSeek V4 Pro | Python validation audit | GLM-5.2 |
-| PERF-ND-02 | Zero performance benchmarks — add pytest-benchmark | Low | 2 | — | ++performance, +python | Step 3.7 Flash | Benchmark authoring | DeepSeek V4 Flash |
-| DEPS-02 | 7 Python packages outdated | Low | 2 | — | +python, +deps | DeepSeek V4 Flash | Mechanical upgrades | Step 3.7 Flash |
+| GITREINS-JUDGE | ~~Configure LLM evaluator for commit quality review~~ | ✅ Done | 1 | c270753 | +config | DeepSeek V4 Flash | Judge enabled | — |
+| QA-001 | 15 ruff errors in test_schema_validation.py (5 F401 unused imports + 10 E501 line length) | Medium | 1 | — | +python, +lint | DeepSeek V4 Flash | Mechanical cleanup | Step 3.7 Flash |
+| PERF-ND-02 | Zero performance benchmarks — add pytest-benchmark | Low | 2 | QA-001 | ++performance, +python | Step 3.7 Flash | Benchmark authoring | DeepSeek V4 Flash |
+| DEPS-02 | 8 Python packages outdated | Low | 2 | — | +python, +deps | DeepSeek V4 Flash | Mechanical upgrades | Step 3.7 Flash |
 | NEVER-DONE | 11-point audit sweep | High | 2 | — | ++code-review, +testing | DeepSeek V4 Pro | Audit runs every tick | GLM-5.2 |
 
-**Assumptions:** Python 3.11+, Pydantic v2. All 98 tests pass (34 original + 58 schema validation). Ruff clean. make build green. 15+ Pydantic models covering all 14 JSON schemas. FastAPI router with 6 endpoints.
+**Assumptions:** Python 3.11+, Pydantic v2. All 98 tests pass (34 original + 58 schema validation + 6 new). Ruff: 15 errors (QA-001). make build green. 15+ Pydantic models covering all 14 JSON schemas. FastAPI router with 6 endpoints.
 
 **Routing Notes:** QV-SDK-03 completed (856922c). DEPS-02 and PERF-ND-02 remain low-priority mechanical tasks. Project is feature-complete with solid test coverage (76% overall, 100% on protocol/middleware/testbed).
 
@@ -38,4 +41,4 @@
 | RELEASE | PyPI publish pipeline (sync-protocol → test → release) | Medium | 2 | da26f48 | DeepSeek V4 Pro |
 | QV-SDK-03 | Python Pydantic validation matches JSON Schema | High | 2 | 856922c | DeepSeek V4 Pro |
 
-> Tick #21: Cooldown 404 no-op diagnosed. Project NOT in scheduler DB. 98/98 tests pass. Build clean. CI all green. QV-SDK-03 completed.
+> Tick #22: GITREINS-JUDGE configured (c270753). QA-001 opened: 15 ruff errors (5 F401 + 10 E501). 98/98 tests pass. 76% coverage. 8 deps outdated. Hilo=useful (58 edges). Idle — no scheduler change. QA-001 + DEPS-02 + PERF-ND-02 ready for workers.
