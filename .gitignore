@@ -12,3 +12,4 @@ build/
 .vfs/graph/graph.db.wal
 .vfs/graph/.last_warm
 .gitreins/tasks.yaml
+.coverage
