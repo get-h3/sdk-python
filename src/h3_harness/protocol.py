@@ -127,14 +127,14 @@ class Model(BaseModel):
 
 class SessionState(BaseModel):
     cost_so_far: float = 0.0
-    started_at: str
+    started_at: str = ""
     total_llm_calls: int = 0
     total_tool_calls: int = 0
     turn_count: int = 0
 
 
 class Config(BaseModel):
-    max_iterations: int = Field(ge=1)
+    max_iterations: int = Field(default=100, ge=1)
     timeout_seconds: int = Field(default=300, ge=1)
     max_tool_calls_per_turn: int | None = Field(default=None, ge=0)
     project_dir: str | None = None
@@ -142,10 +142,10 @@ class Config(BaseModel):
 
 
 class Context(BaseModel):
-    config: Config
+    config: Config = Config()
     history: list[HistoryEntry] = []
     models: list[Model] = []
-    session_state: SessionState
+    session_state: SessionState = SessionState()
     tools: list[Tool] = []
     memory: str | None = None
     skills: list[str] | None = None

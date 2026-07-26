@@ -321,14 +321,18 @@ def test_identity_rejects_missing_user_id():
         Identity(platform="t", chat_id="c", user_name="n")
 
 
-def test_session_state_rejects_missing_started_at():
-    with pytest.raises(ValidationError):
-        SessionState()
+def test_session_state_defaults_started_at():
+    """started_at now defaults to '' (matching Go/TS)."""
+    ss = SessionState()
+    assert ss.started_at == ""
+    assert ss.turn_count == 0
 
 
-def test_config_rejects_missing_max_iterations():
-    with pytest.raises(ValidationError):
-        Config(timeout_seconds=300)
+def test_config_defaults_max_iterations():
+    """max_iterations now defaults to 100 (matching TypeScript SDK)."""
+    cfg = Config(timeout_seconds=300)
+    assert cfg.max_iterations == 100
+    assert cfg.timeout_seconds == 300
 
 
 def test_process_request_rejects_missing_session_id():
