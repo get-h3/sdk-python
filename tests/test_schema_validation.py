@@ -30,16 +30,12 @@ from h3_harness.protocol import (
     End,
     EndReason,
     ErrorCode,
-    ErrorDetail,
     ErrorResponse,
     HealthResponse,
     HealthStatus,
-    HistoryEntry,
     Identity,
     LLMCall,
-    LLMMessage,
     Message,
-    Model,
     ProcessRequest,
     ResultPayload,
     ResultRequest,
@@ -48,7 +44,6 @@ from h3_harness.protocol import (
     SessionState,
     SessionStatus,
     TextResponse,
-    Tool,
     ToolCall,
     Wait,
 )
@@ -108,7 +103,8 @@ def validate_instance(instance: object, schema_name: str) -> None:
     if errors:
         msg = f"Schema validation failed for {schema_name}:\n"
         for err in errors:
-            msg += f"  - {err.message} (at {'/'.join(str(p) for p in err.absolute_path)})\n"
+            path = "/".join(str(p) for p in err.absolute_path)
+            msg += f"  - {err.message} (at {path})\n"
         raise AssertionError(msg)
 
 
@@ -378,49 +374,63 @@ def test_decision_type_enum_matches_schema():
     schema = _load_schema("decision.json")
     schema_values = set(schema["properties"]["decision"]["enum"])
     python_values = {dt.value for dt in DecisionType}
-    assert python_values == schema_values, f"Mismatch: {python_values} vs {schema_values}"
+    assert python_values == schema_values, (
+        f"Mismatch: {python_values} vs {schema_values}"
+    )
 
 
 def test_end_reason_enum_matches_schema():
     schema = _load_schema("end.json")
     schema_values = set(schema["properties"]["reason"]["enum"])
     python_values = {er.value for er in EndReason}
-    assert python_values == schema_values, f"Mismatch: {python_values} vs {schema_values}"
+    assert python_values == schema_values, (
+        f"Mismatch: {python_values} vs {schema_values}"
+    )
 
 
 def test_health_status_enum_matches_schema():
     schema = _load_schema("health-response.json")
     schema_values = set(schema["properties"]["status"]["enum"])
     python_values = {hs.value for hs in HealthStatus}
-    assert python_values == schema_values, f"Mismatch: {python_values} vs {schema_values}"
+    assert python_values == schema_values, (
+        f"Mismatch: {python_values} vs {schema_values}"
+    )
 
 
 def test_cancel_reason_enum_matches_schema():
     schema = _load_schema("cancel-request.json")
     schema_values = set(schema["properties"]["reason"]["enum"])
     python_values = {cr.value for cr in CancelReason}
-    assert python_values == schema_values, f"Mismatch: {python_values} vs {schema_values}"
+    assert python_values == schema_values, (
+        f"Mismatch: {python_values} vs {schema_values}"
+    )
 
 
 def test_result_type_enum_matches_schema():
     schema = _load_schema("result-request.json")
     schema_values = set(schema["properties"]["result"]["properties"]["type"]["enum"])
     python_values = {rt.value for rt in ResultType}
-    assert python_values == schema_values, f"Mismatch: {python_values} vs {schema_values}"
+    assert python_values == schema_values, (
+        f"Mismatch: {python_values} vs {schema_values}"
+    )
 
 
 def test_error_code_enum_matches_schema():
     schema = _load_schema("error-response.json")
     schema_values = set(schema["properties"]["error"]["properties"]["code"]["enum"])
     python_values = {ec.value for ec in ErrorCode}
-    assert python_values == schema_values, f"Mismatch: {python_values} vs {schema_values}"
+    assert python_values == schema_values, (
+        f"Mismatch: {python_values} vs {schema_values}"
+    )
 
 
 def test_session_status_enum_matches_schema():
     schema = _load_schema("session-response.json")
     schema_values = set(schema["properties"]["status"]["enum"])
     python_values = {ss.value for ss in SessionStatus}
-    assert python_values == schema_values, f"Mismatch: {python_values} vs {schema_values}"
+    assert python_values == schema_values, (
+        f"Mismatch: {python_values} vs {schema_values}"
+    )
 
 
 # ── Numeric constraint validation ───────────────────────────────────
@@ -447,7 +457,11 @@ def test_wait_duration_seconds_minimum():
 def test_llm_call_temperature_range():
     """Schema requires temperature 0.0–2.0."""
     with pytest.raises(ValidationError):
-        LLMCall(model="m", messages=[{"role": "user", "content": "hi"}], temperature=2.1)
+        LLMCall(
+            model="m",
+            messages=[{"role": "user", "content": "hi"}],
+            temperature=2.1,
+        )
 
 
 def test_result_payload_duration_ms_minimum():
@@ -463,4 +477,6 @@ def test_capability_enum_matches_schema():
     schema = _load_schema("health-response.json")
     schema_values = set(schema["properties"]["capabilities"]["items"]["enum"])
     python_values = {c.value for c in Capability}
-    assert python_values == schema_values, f"Mismatch: {python_values} vs {schema_values}"
+    assert python_values == schema_values, (
+        f"Mismatch: {python_values} vs {schema_values}"
+    )
