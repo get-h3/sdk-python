@@ -3,6 +3,7 @@ guards:
   lint: true
   tests: true
   test_mode: diff
+  test_command: .venv/bin/python -m pytest -x --tb=short -q
 evaluator:
   max_iterations: 50
   max_time: 10m
