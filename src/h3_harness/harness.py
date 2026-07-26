@@ -135,7 +135,7 @@ def create_router(harness: BaseHarness, *, prefix: str = "") -> APIRouter:
         return harness.health()
 
     # ── POST /v1/process ─────────────────────────────────────────
-    @router.post("/v1/process", response_model=Decision)
+    @router.post("/v1/process", response_model=Decision, response_model_exclude_none=True)  # noqa: E501
     async def process(req: ProcessRequest) -> Decision:
         try:
             return await harness.on_process(req)
@@ -147,7 +147,7 @@ def create_router(harness: BaseHarness, *, prefix: str = "") -> APIRouter:
             )
 
     # ── POST /v1/result ──────────────────────────────────────────
-    @router.post("/v1/result", response_model=Decision)
+    @router.post("/v1/result", response_model=Decision, response_model_exclude_none=True)  # noqa: E501
     async def result(req: ResultRequest) -> Decision:
         try:
             return await harness.on_result(req)

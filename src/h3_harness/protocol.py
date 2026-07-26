@@ -295,11 +295,14 @@ class Decision(BaseModel):
 
     The decision field determines which sub-type is valid.
     Pydantic validates that the matching sub-field is present.
+    History is None when empty (omitted from wire JSON via
+    response_model_exclude_none=True on FastAPI routes),
+    matching Go (omitempty) and TS (optional) behavior.
     """
 
     decision: DecisionType
     decision_id: str = Field(default_factory=lambda: str(uuid4()))
-    history: list[HistoryEntry] = Field(default_factory=list)
+    history: list[HistoryEntry] | None = None
     tool_call: ToolCall | None = None
     llm_call: LLMCall | None = None
     text: TextResponse | None = None

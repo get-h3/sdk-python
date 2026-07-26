@@ -13,3 +13,6 @@ build/
 .vfs/graph/.last_warm
 .gitreins/tasks.yaml
 .coverage
+
+# E2E test scripts (local only)
+_run_echo*.py
