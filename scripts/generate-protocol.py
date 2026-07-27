@@ -76,8 +76,10 @@ def py_type_from_schema(prop: dict, defs: dict) -> str:
     return "Any"
 
 
-# Fields that should default to empty/useful values even when JSON Schema marks them required.
-# This ensures SDK consumers get ergonomic defaults for session-state and context fields.
+# Fields that should default to empty/useful values even when JSON Schema
+# marks them required.
+# This ensures SDK consumers get ergonomic defaults for session-state
+# and context fields.
 LENIENT_DEFAULTS: dict[str, dict[str, str]] = {
     "Message": {"role": '"user"'},
     "Config": {
@@ -99,8 +101,12 @@ LENIENT_DEFAULTS: dict[str, dict[str, str]] = {
 # Fields that need explicit Field() constraints not captured by JSON Schema.
 # Maps class name → field name → full Python expression for the field.
 FIELD_OVERRIDES: dict[str, dict[str, str]] = {
-    "Wait": {"duration_seconds": "duration_seconds: int | None = Field(default=None, ge=1)"},
-    "ResultPayload": {"duration_ms": "duration_ms: int | None = Field(default=None, ge=0)"},
+    "Wait": {
+        "duration_seconds": "duration_seconds: int | None = Field(default=None, ge=1)",
+    },
+    "ResultPayload": {
+        "duration_ms": "duration_ms: int | None = Field(default=None, ge=0)",
+    },
     "Message": {"timestamp": "timestamp: str | None = None"},
     "Identity": {
         "user_id": "user_id: str | None = None",
@@ -286,7 +292,8 @@ def generate_protocol(schema_dir: str) -> str:
     # Fix long docstrings
     code = "\n".join(lines)
     code = code.replace(
-        '"""Request body for POST /v1/process — new user message triggers harness process..."""',
+        '"""Request body for POST /v1/process — '
+        'new user message triggers harness process..."""',
         '"""Request body for POST /v1/process — new message triggers process.\n'
         '    The harness evaluates the message and context, then returns a Decision.\n'
         '    """',
