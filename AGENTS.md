@@ -12,9 +12,15 @@ pip install h3-harness-sdk
 
 ```python
 from h3_harness import (
-    BaseHarness, Decision, DecisionType, End, TextResponse, create_router,
+    BaseHarness,
+    Decision,
+    DecisionType,
+    End,
+    TextResponse,
+    create_router,
 )
 from fastapi import FastAPI
+
 
 class MyHarness(BaseHarness):
     async def on_process(self, req):
@@ -25,6 +31,7 @@ class MyHarness(BaseHarness):
 
     async def on_result(self, req):
         return Decision(decision=DecisionType.END, end=End(reason="task_complete"))
+
 
 app = FastAPI()
 app.include_router(create_router(MyHarness()))

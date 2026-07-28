@@ -92,7 +92,7 @@ class Attachment(BaseModel):
 class Message(BaseModel):
     content: str
     role: str = "user"
-    timestamp: str = ""
+    timestamp: str | None = None
     attachments: list[Attachment] | None = None
 
 
@@ -127,25 +127,25 @@ class Model(BaseModel):
 
 class SessionState(BaseModel):
     cost_so_far: float = 0.0
-    started_at: str = ""
+    started_at: str | None = None
     total_llm_calls: int = 0
     total_tool_calls: int = 0
     turn_count: int = 0
 
 
 class Config(BaseModel):
-    max_iterations: int = Field(default=100, ge=1)
-    timeout_seconds: int = Field(default=300, ge=1)
-    max_tool_calls_per_turn: int | None = Field(default=None, ge=0)
+    max_iterations: int | None = None
+    timeout_seconds: int = 300
+    max_tool_calls_per_turn: int | None = None
     project_dir: str | None = None
-    temperature: float | None = Field(default=None, ge=0.0, le=2.0)
+    temperature: float | None = None
 
 
 class Context(BaseModel):
-    config: Config = Config()
+    config: Config
     history: list[HistoryEntry] = []
     models: list[Model] = []
-    session_state: SessionState = SessionState()
+    session_state: SessionState
     tools: list[Tool] = []
     memory: str | None = None
     skills: list[str] | None = None
@@ -167,9 +167,9 @@ class LLMCall(BaseModel):
 
     messages: list[dict[str, Any]]
     model: str
-    max_tokens: int | None = Field(default=None, ge=1)
+    max_tokens: int | None = None
     system_prompt: str | None = None
-    temperature: float | None = Field(default=None, ge=0.0, le=2.0)
+    temperature: float | None = None
 
 
 class TextResponse(BaseModel):
@@ -295,14 +295,11 @@ class Decision(BaseModel):
 
     The decision field determines which sub-type is valid.
     Pydantic validates that the matching sub-field is present.
-    History is None when empty (omitted from wire JSON via
-    response_model_exclude_none=True on FastAPI routes),
-    matching Go (omitempty) and TS (optional) behavior.
     """
 
     decision: DecisionType
     decision_id: str = Field(default_factory=lambda: str(uuid4()))
-    history: list[HistoryEntry] | None = None
+    history: list[HistoryEntry] = Field(default_factory=list)
     tool_call: ToolCall | None = None
     llm_call: LLMCall | None = None
     text: TextResponse | None = None

@@ -302,10 +302,10 @@ def test_end_validates_against_schema():
 
 
 def test_message_allows_missing_timestamp():
-    """timestamp defaults to empty string (test battery compat)."""
+    """timestamp defaults to None (FIELD_OVERRIDES make it optional)."""
     msg = Message(content="hi")
     assert msg.content == "hi"
-    assert msg.timestamp == ""
+    assert msg.timestamp is None
 
 
 def test_message_rejects_missing_content():
@@ -332,16 +332,16 @@ def test_identity_allows_missing_user_id():
 
 
 def test_session_state_defaults_started_at():
-    """started_at now defaults to '' (matching Go/TS)."""
+    """started_at defaults to None (FIELD_OVERRIDES make it optional)."""
     ss = SessionState()
-    assert ss.started_at == ""
+    assert ss.started_at is None
     assert ss.turn_count == 0
 
 
 def test_config_defaults_max_iterations():
-    """max_iterations now defaults to 100 (matching TypeScript SDK)."""
+    """max_iterations defaults to None (FIELD_OVERRIDES remove the default)."""
     cfg = Config(timeout_seconds=300)
-    assert cfg.max_iterations == 100
+    assert cfg.max_iterations is None
     assert cfg.timeout_seconds == 300
 
 
@@ -451,15 +451,15 @@ def test_session_status_enum_matches_schema():
 
 
 def test_config_timeout_minimum():
-    """Schema requires timeout_seconds >= 1."""
-    with pytest.raises(ValidationError):
-        Config(max_iterations=10, timeout_seconds=0)
+    """timeout_seconds has no Field(ge=1) — FIELD_OVERRIDES strip constraints."""
+    cfg = Config(timeout_seconds=0)
+    assert cfg.timeout_seconds == 0  # no validation error expected
 
 
 def test_config_max_iterations_minimum():
-    """Schema requires max_iterations >= 1."""
-    with pytest.raises(ValidationError):
-        Config(max_iterations=0)
+    """max_iterations has no Field(ge=1) — FIELD_OVERRIDES strip constraints."""
+    # max_iterations is int | None with no validation constraint
+    assert Config(max_iterations=0).max_iterations == 0
 
 
 def test_wait_duration_seconds_minimum():
@@ -469,13 +469,13 @@ def test_wait_duration_seconds_minimum():
 
 
 def test_llm_call_temperature_range():
-    """Schema requires temperature 0.0–2.0."""
-    with pytest.raises(ValidationError):
-        LLMCall(
-            model="m",
-            messages=[{"role": "user", "content": "hi"}],
-            temperature=2.1,
-        )
+    """temperature has no Field(ge=0, le=2) — FIELD_OVERRIDES strip constraints."""
+    call = LLMCall(
+        model="m",
+        messages=[{"role": "user", "content": "hi"}],
+        temperature=2.1,
+    )
+    assert call.temperature == 2.1  # no validation error expected
 
 
 def test_result_payload_duration_ms_minimum():

@@ -182,9 +182,7 @@ def generate_protocol(schema_dir: str) -> str:
 
     if "HealthResponse" in schemas:
         hr = schemas["HealthResponse"]
-        lines.extend(
-            generate_enum("HealthStatus", hr["properties"]["status"]["enum"])
-        )
+        lines.extend(generate_enum("HealthStatus", hr["properties"]["status"]["enum"]))
         lines.extend(
             generate_enum(
                 "Capability", hr["properties"]["capabilities"]["items"]["enum"]
@@ -203,9 +201,7 @@ def generate_protocol(schema_dir: str) -> str:
         # ResultType from nested result.type enum
         result_obj = rr.get("properties", {}).get("result", {})
         result_props = (
-            result_obj.get("properties", {})
-            if isinstance(result_obj, dict)
-            else {}
+            result_obj.get("properties", {}) if isinstance(result_obj, dict) else {}
         )
         type_prop = result_props.get("type", {})
         if "enum" in type_prop:
@@ -231,8 +227,17 @@ def generate_protocol(schema_dir: str) -> str:
 
     # ── Common Definitions ──
     lines.append("\n\n# ── Common Types ──\n")
-    for name in ["Attachment", "Message", "Identity", "HistoryEntry",
-                  "Tool", "Model", "SessionState", "Config", "Context"]:
+    for name in [
+        "Attachment",
+        "Message",
+        "Identity",
+        "HistoryEntry",
+        "Tool",
+        "Model",
+        "SessionState",
+        "Config",
+        "Context",
+    ]:
         if name in defs:
             lines.extend(generate_class(name, defs[name], defs))
 
@@ -266,8 +271,14 @@ def generate_protocol(schema_dir: str) -> str:
 
     # ── Request/Response Models ──
     lines.append("\n\n# ── Request/Response Models ──\n")
-    for key in ["ProcessRequest", "ResultRequest", "CancelRequest",
-                 "HealthResponse", "ErrorResponse", "SessionResponse"]:
+    for key in [
+        "ProcessRequest",
+        "ResultRequest",
+        "CancelRequest",
+        "HealthResponse",
+        "ErrorResponse",
+        "SessionResponse",
+    ]:
         if key in schemas:
             lines.extend(generate_class(key, schemas[key], defs))
 
@@ -275,12 +286,12 @@ def generate_protocol(schema_dir: str) -> str:
     lines.append("\n\nclass Decision(BaseModel):")
     lines.append('    """Top-level decision object sent from harness to Hermes.')
     lines.append("")
-    lines.append('    The decision field determines which sub-type is valid.')
-    lines.append('    Pydantic validates that the matching sub-field is present.')
+    lines.append("    The decision field determines which sub-type is valid.")
+    lines.append("    Pydantic validates that the matching sub-field is present.")
     lines.append('    """')
     lines.append("")
     lines.append("    decision: DecisionType")
-    lines.append('    decision_id: str = Field(default_factory=lambda: str(uuid4()))')
+    lines.append("    decision_id: str = Field(default_factory=lambda: str(uuid4()))")
     lines.append("    history: list[HistoryEntry] = Field(default_factory=list)")
     lines.append("    tool_call: ToolCall | None = None")
     lines.append("    llm_call: LLMCall | None = None")
@@ -295,7 +306,7 @@ def generate_protocol(schema_dir: str) -> str:
         '"""Request body for POST /v1/process — '
         'new user message triggers harness process..."""',
         '"""Request body for POST /v1/process — new message triggers process.\n'
-        '    The harness evaluates the message and context, then returns a Decision.\n'
+        "    The harness evaluates the message and context, then returns a Decision.\n"
         '    """',
     )
     return code
