@@ -54,7 +54,9 @@ from h3_harness.protocol import (
 # test_schema_validation.py is at get-h3/sdk-python/tests/
 SCHEMA_DIR = (
     Path(__file__).resolve().parent.parent.parent  # get-h3/sdk-python → get-h3
-    / "protocol" / "schemas" / "v1"
+    / "protocol"
+    / "schemas"
+    / "v1"
 )
 
 
@@ -109,6 +111,7 @@ def validate_instance(instance: object, schema_name: str) -> None:
 
 
 # ── Helper factories ─────────────────────────────────────────────────
+
 
 def _config(**kwargs) -> Config:
     defaults = {"max_iterations": 10, "timeout_seconds": 300}
@@ -184,9 +187,7 @@ def test_health_response_validates_against_schema():
 
 
 def test_error_response_validates_against_schema():
-    resp = ErrorResponse(
-        error={"code": "INVALID_REQUEST", "message": "Bad payload"}
-    )
+    resp = ErrorResponse(error={"code": "INVALID_REQUEST", "message": "Bad payload"})
     validate_instance(resp, "error-response.json")
 
 
