@@ -133,9 +133,12 @@ def test_logging_format_contains_all_parts(caplog):
     assert len(caplog.records) >= 1
     msg = caplog.records[0].getMessage()
 
-    # The format string from middleware: "%s %s → %d (%dms)"
-    assert " → " in msg, f"Expected arrow separator in log: {msg}"
-    assert re.search(r"\(\d+ms\)", msg), f"Expected (Nms) in log: {msg}"
+    # New format: "[ISO8601] METHOD /path STATUS Nms"
+    assert re.search(r"\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z\]", msg), f"Expected ISO8601 timestamp in log: {msg}"
+    assert "GET" in msg
+    assert "/format-test" in msg
+    assert "200" in msg
+    assert re.search(r"\d+ms", msg), f"Expected Nms in log: {msg}"
 
 
 # ── Logger name ─────────────────────────────────────────────────

@@ -12,6 +12,7 @@ Called automatically by ``create_router()`` if an app reference is provided.
 
 from __future__ import annotations
 
+import datetime
 import logging
 import time
 
@@ -29,11 +30,13 @@ class _RequestLoggingMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         start = time.monotonic()
+        ts = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         try:
             response = await call_next(request)
             elapsed_ms = int((time.monotonic() - start) * 1000)
             logger.info(
-                "%s %s → %d (%dms)",
+                "[%s] %s %s %d %dms",
+                ts,
                 request.method,
                 request.url.path,
                 response.status_code,
@@ -42,8 +45,9 @@ class _RequestLoggingMiddleware(BaseHTTPMiddleware):
             return response
         except Exception as exc:
             elapsed_ms = int((time.monotonic() - start) * 1000)
-            logger.exception(
-                "%s %s → 500 (%dms) — %s",
+            logger.error(
+                "[%s] %s %s 500 %dms — %s",
+                ts,
                 request.method,
                 request.url.path,
                 elapsed_ms,
