@@ -134,7 +134,9 @@ def test_logging_format_contains_all_parts(caplog):
     msg = caplog.records[0].getMessage()
 
     # New format: "[ISO8601] METHOD /path STATUS Nms"
-    assert re.search(r"\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z\]", msg), f"Expected ISO8601 timestamp in log: {msg}"
+    assert re.search(r"\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z\]", msg), (
+        f"Expected ISO8601 timestamp in log: {msg}"
+    )
     assert "GET" in msg
     assert "/format-test" in msg
     assert "200" in msg
