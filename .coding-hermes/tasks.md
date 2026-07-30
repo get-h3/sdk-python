@@ -14,14 +14,14 @@
 | GITREINS-JUDGE | ~~Configure LLM evaluator for commit quality review~~ | ✅ Done | 1 | c270753 | +config | DeepSeek V4 Flash | Judge enabled | — |
 | QA-001 | ~~15 ruff errors in test_schema_validation.py (5 F401 unused imports + 10 E501 line length)~~ | ✅ Done | 1 | 246c793 | DeepSeek V4 Flash |
 || PERF-ND-02 | Zero performance benchmarks — add pytest-benchmark | Low | 2 | QA-001 | ++performance, +python | Step 3.7 Flash | Benchmark authoring | DeepSeek V4 Flash |
-|| DEPS-02 | 8 Python packages outdated | Low | 2 | — | +python, +deps | DeepSeek V4 Flash | Mechanical upgrades | Step 3.7 Flash |
+|| DEPS-02 | ~~Upgrade outdated Python packages~~ | ✅ Done | 1 | dbf85be | +python, +deps | DeepSeek V4 Pro (worker) | fastapi→0.141.1, annotated-doc→0.0.5, uvicorn→0.52.0, websockets→17.0 | — |
 | NEVER-DONE | 11-point audit sweep | High | 2 | — | ++code-review, +testing | DeepSeek V4 Pro | Audit runs every tick | GLM-5.2 |
 
 **Assumptions:** Python 3.11+, Pydantic v2. All 98 tests pass (34 original + 58 schema validation + 6 new). Ruff: 0 errors (QA-001 completed). make build green. 15+ Pydantic models covering all 14 JSON schemas. FastAPI router with 6 endpoints.
 
 **Routing Notes:** QV-SDK-03 completed (856922c). DEPS-02 and PERF-ND-02 remain low-priority mechanical tasks. Project is feature-complete with solid test coverage (76% overall, 100% on protocol/middleware/testbed).
 
-**Execution Order:** DEPS-02 → PERF-ND-02 → NEVER-DONE.
+**Execution Order:** PERF-ND-02 → NEVER-DONE.
 
 **CRITICAL — Cooldown 404 No-Op:** Project is NOT registered in scheduler DB. All previous "cooldown re-fixed" claims (20+ ticks) were PUTting to a 404 endpoint — every one was a silent no-op. Stop using scheduler API for cooldown. Accept idle state.
 
@@ -58,3 +58,5 @@
 > Tick #29: NEVER-DONE 14-point audit. 98/98 tests pass (0.35s). Coverage 76% (100% on core: protocol/middleware/testbed). Ruff: 0 errors (1 format fix applied — test_middleware.py:137 E501 reformatted). Format: 22 files clean. Generate: idempotent (make generate → ruff auto-fix protocol.py, zero semantic diff). Hilo=useful (85 edges/20 files, all flat-library orphans — expected). GitReins guard: PASS (nothing staged). GitReins judge: configured (deepseek-v4-flash). GitReins tasks: 1 complete (infra-gr-04-verify). Docs: 10/10 — GOVERNANCE.md ADDED (was last missing boilerplate — CHANGELOG.md done in #27, SUPPORT.md + CODE_OF_CONDUCT.md in #28, GOVERNANCE.md in #29 ✅). Specs: N/A (SDK inherits from umbrella h3/specs). TODO/FIXME/HACK: none. Deps: 4 outdated (fastapi 0.140.0→0.140.13, annotated-doc 0.0.4→0.0.5, uvicorn 0.51.0→0.52.0, pydantic-core 2.46.4→2.47.0 blocked by pydantic 2.13.4 pin). 4 commits unpushed since #27. Untracked: none (clean). Project idle. Idle count: 3 since tick #26 (FIELD_OVERRIDES last productive). Below 7-tick escalation threshold.
 >
 > Tick #30: NEVER-DONE 14-point audit. 98/98 tests pass (0.40s). Coverage 76% (100% on core: protocol/middleware/testbed). Ruff: 0 errors, 13 files clean. Generate: idempotent (make generate → 2 ruff auto-fixes on protocol.py, zero semantic diff). Hilo=useful (87 edges/20 files warm, 85 edges/20 files stats — flat-library orphans expected). GitReins guard: PASS (secrets/lint/tests). GitReins tasks: 1 complete (infra-gr-04-verify), 0 pending. Judge: configured (deepseek-v4-flash). CI: 3 most recent green. Docs: 10/10 all present. TODO/FIXME/HACK: 0 hits. Deps: 5 outdated — websockets 16.1.1→17.0 NEW since #29, plus fastapi 0.140.0→0.141.1, annotated-doc 0.0.4→0.0.5, uvicorn 0.51.0→0.52.0, pydantic-core 2.46.4→2.47.0 blocked by pydantic pin. DuckBrain: 12 keys (hasMore=false) — key-count corrected from prior overcount claim. Scheduler: CooldownS=43200, Enabled=1. Project idle. Idle count: 4 since tick #26. Below 7-tick escalation threshold. DEPS-02 + PERF-ND-02 remain low-priority (stale).
+>
+> Tick #31: NEVER-DONE 14-point audit. DEPS-02 dispatched + completed (dbf85be). 98/98 tests pass (0.36s). Coverage 76% (100% on core: protocol/middleware/testbed). Ruff: 0 errors, 13 files clean. Generate: idempotent (make generate → ruff auto-fix + format, zero semantic diff). Hilo=useful (86 edges/20 files — flat-library orphans expected). GitReins guard: PASS. GitReins judge: configured (deepseek-v4-flash), 1 complete task (infra-gr-04-verify). Docs: 8/8 all present. TODO/FIXME/HACK: 0 hits. Deps: 1 outdated (pydantic-core 2.46.4→2.47.0 blocked by pydantic 2.13.4 pin). 7 commits unpushed. Workdir clean. Idle count: 0 (DEPS-02 was productive). PERF-ND-02 remains low-priority.
