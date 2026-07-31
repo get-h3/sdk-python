@@ -32,6 +32,7 @@ dependencies = [
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
+    "pytest-benchmark>=5.2.3",
     "httpx>=0.26",
     "jsonschema>=4.20",
     "ruff>=0.1",
@@ -49,3 +50,6 @@ select = ["E", "F", "I", "N", "W", "UP"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+# Small benchmark rounds so the perf suite stays snappy in CI. Passed via
+# addopts because pytest-benchmark 5.2.3 registers no ini keys of its own.
+addopts = ["--benchmark-min-rounds=3", "--benchmark-max-time=0.5"]
