@@ -18,3 +18,6 @@ build/
 _*.py
 # GitReins verdict history (local)
 .gitreins/history/
+
+# pytest-benchmark cache (regenerated on every run)
+.benchmarks/
