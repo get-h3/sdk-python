@@ -21,3 +21,7 @@ _*.py
 
 # pytest-benchmark cache (regenerated on every run)
 .benchmarks/
+
+# DuckDB board local cache (rebuildable from Parquet)
+.coding-hermes/board/board.db
+.coding-hermes/board/board.db.wal

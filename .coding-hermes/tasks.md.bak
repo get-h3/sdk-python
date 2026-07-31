@@ -10,13 +10,13 @@
 
 | ID | Task | Pri | Cpx | Deps | Tags | Model | Reasoning | Fallback |
 |----|------|-----|-----|------|------|-------|-----------|----------|
-|| BOARD-V2 | 🟡 MIGRATE BOARD TO DUCKDB v2.1 — run `python3 ~/.hermes/scripts/migrate-board-to-duckdb.py .` (load skill coding-hermes-board first). Creates .coding-hermes/board/ (schema.sql, tasks.parquet, events.parquet), archives tasks.md → tasks.md.bak, commit. Same pattern as DuckBrain. | P1 | 3 | — | duckdb,board,migration | DeepSeek V4 Pro | Run migration script, verify Parquet, commit board | DeepSeek V4 Flash |
-| QV-SDK-03 | ~~Python Pydantic validation matches JSON Schema~~ | ✅ Done | 2 | 856922c | ++testing, ++python | DeepSeek V4 Pro | Python validation audit | GLM-5.2 |
+|| BOARD-V2 | 🟡 MIGRATE BOARD TO DUCKDB v2.1 — run `python3 ~/.hermes/scripts/migrate-board-to-duckdb.py .` (load skill coding-hermes-board first). Creates .coding-hermes/board/ (schema.sql, tasks.parquet, events.parquet), archives tasks.md → tasks.md.bak, commit. Same pattern as DuckBrain. | P1 | 3 | — | duckdb,board,migration | deepseek-v4-flash | Run migration script, verify Parquet, commit board | deepseek-v4-flash |
+| QV-SDK-03 | ~~Python Pydantic validation matches JSON Schema~~ | ✅ Done | 2 | 856922c | ++testing, ++python | deepseek-v4-flash | Python validation audit | GLM-5.2 |
 | GITREINS-JUDGE | ~~Configure LLM evaluator for commit quality review~~ | ✅ Done | 1 | c270753 | +config | DeepSeek V4 Flash | Judge enabled | — |
 | QA-001 | ~~15 ruff errors in test_schema_validation.py (5 F401 unused imports + 10 E501 line length)~~ | ✅ Done | 1 | 246c793 | DeepSeek V4 Flash |
 || PERF-ND-02 | ~~Zero performance benchmarks — add pytest-benchmark~~ | ✅ Done | 2 | QA-001 | ++performance, +python | Step 3.7 Flash | Benchmark authoring | DeepSeek V4 Flash |
-|| DEPS-02 | ~~Upgrade outdated Python packages~~ | ✅ Done | 1 | dbf85be | +python, +deps | DeepSeek V4 Pro (worker) | fastapi→0.141.1, annotated-doc→0.0.5, uvicorn→0.52.0, websockets→17.0 | — |
-| NEVER-DONE | 11-point audit sweep | High | 2 | — | ++code-review, +testing | DeepSeek V4 Pro | Audit runs every tick | GLM-5.2 |
+|| DEPS-02 | ~~Upgrade outdated Python packages~~ | ✅ Done | 1 | dbf85be | +python, +deps | deepseek-v4-flash (worker) | fastapi→0.141.1, annotated-doc→0.0.5, uvicorn→0.52.0, websockets→17.0 | — |
+| NEVER-DONE | 11-point audit sweep | High | 2 | — | ++code-review, +testing | deepseek-v4-flash | Audit runs every tick | GLM-5.2 |
 
 **Assumptions:** Python 3.11+, Pydantic v2. All 98 tests pass (34 original + 58 schema validation + 6 new). Ruff: 0 errors (QA-001 completed). make build green. 15+ Pydantic models covering all 14 JSON schemas. FastAPI router with 6 endpoints.
 
@@ -33,14 +33,14 @@
 | ID | Task | Pri | Cpx | Commit | Model |
 |----|------|-----|-----|--------|-------|
 | INIT | Verify project structure, dependencies, DuckBrain namespace | High | 1 | aaf4233 | DeepSeek V4 Flash |
-| SPEC | Audit spec alignment, verify API surface completeness | High | 2 | 751ecbd | DeepSeek V4 Pro |
-| CORE | protocol.py (15+ Pydantic models), harness.py (BaseHarness ABC + FastAPI router), middleware.py | Critical | 5 | e621770 | DeepSeek V4 Pro |
-| TEST | testbed.py (MockHermes) + 34 pytest tests | High | 3 | f87d553 | DeepSeek V4 Pro |
-| EXAMPLES | minimal, echo, langchain examples | Medium | 2 | 825615c | DeepSeek V4 Pro |
+| SPEC | Audit spec alignment, verify API surface completeness | High | 2 | 751ecbd | deepseek-v4-flash |
+| CORE | protocol.py (15+ Pydantic models), harness.py (BaseHarness ABC + FastAPI router), middleware.py | Critical | 5 | e621770 | deepseek-v4-flash |
+| TEST | testbed.py (MockHermes) + 34 pytest tests | High | 3 | f87d553 | deepseek-v4-flash |
+| EXAMPLES | minimal, echo, langchain examples | Medium | 2 | 825615c | deepseek-v4-flash |
 | CI | GitHub Actions workflow: build + lint + test | Medium | 2 | — | DeepSeek V4 Flash |
 | DOC-06 | Missing CONTRIBUTING.md added | Low | 1 | — | DeepSeek V4 Flash |
-| RELEASE | PyPI publish pipeline (sync-protocol → test → release) | Medium | 2 | da26f48 | DeepSeek V4 Pro |
-| QV-SDK-03 | Python Pydantic validation matches JSON Schema | High | 2 | 856922c | DeepSeek V4 Pro |
+| RELEASE | PyPI publish pipeline (sync-protocol → test → release) | Medium | 2 | da26f48 | deepseek-v4-flash |
+| QV-SDK-03 | Python Pydantic validation matches JSON Schema | High | 2 | 856922c | deepseek-v4-flash |
 
 > Tick #22: GITREINS-JUDGE configured (c270753). QA-001 opened: 15 ruff errors (5 F401 + 10 E501). 98/98 tests pass. 76% coverage. 8 deps outdated. Hilo=useful (58 edges). Idle — no scheduler change. QA-001 + DEPS-02 + PERF-ND-02 ready for workers.
 >
