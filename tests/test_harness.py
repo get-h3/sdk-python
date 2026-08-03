@@ -48,6 +48,47 @@ def client(app):
     return TestClient(app)
 
 
+class SessionTrackingHarness(BaseHarness):
+    """Harness that tracks per-session metadata via get_session_info."""
+
+    _sessions = {
+        "sess-tracked": {
+            "started_at": "2025-01-01T00:00:00Z",
+            "last_active": "2025-01-02T00:00:00Z",
+            "turn_count": 7,
+        },
+        # Omitted started_at/last_active — exercises the empty-string defaults.
+        "sess-minimal": {"turn_count": 3},
+    }
+
+    async def on_process(self, req):
+        return Decision(
+            decision=DecisionType.TEXT,
+            text=TextResponse(content=f"Echo: {req.message.content}", finished=True),
+        )
+
+    async def on_result(self, req):
+        return Decision(
+            decision=DecisionType.END,
+            end=End(reason=EndReason.TASK_COMPLETE.value),
+        )
+
+    def get_session_info(self, session_id: str) -> dict | None:
+        return self._sessions.get(session_id)
+
+
+@pytest.fixture()
+def app_tracking():
+    a = FastAPI()
+    a.include_router(create_router(SessionTrackingHarness()))
+    return a
+
+
+@pytest.fixture()
+def client_tracking(app_tracking):
+    return TestClient(app_tracking)
+
+
 # ── Valid helpers ───────────────────────────────────────────────────
 
 
@@ -135,6 +176,32 @@ def test_get_session(client):
     body = r.json()
     assert body["session_id"] == "sess-123"
     assert body["status"] == "active"
+
+
+def test_get_session_tracking_passes_through_timestamps(client_tracking):
+    r = client_tracking.get("/v1/sessions/sess-tracked")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["session_id"] == "sess-tracked"
+    assert body["status"] == "active"
+    assert body["started_at"] == "2025-01-01T00:00:00Z"
+    assert body["last_active"] == "2025-01-02T00:00:00Z"
+    assert body["turn_count"] == 7
+
+
+def test_get_session_tracking_defaults_when_timestamps_omitted(client_tracking):
+    r = client_tracking.get("/v1/sessions/sess-minimal")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["session_id"] == "sess-minimal"
+    assert body["started_at"] == ""
+    assert body["last_active"] == ""
+    assert body["turn_count"] == 3
+
+
+def test_get_session_tracking_unknown_session_404(client_tracking):
+    r = client_tracking.get("/v1/sessions/sess-unknown")
+    assert r.status_code == 404
 
 
 # ── DELETE /v1/sessions/{id} ────────────────────────────────────────

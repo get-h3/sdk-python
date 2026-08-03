@@ -182,8 +182,8 @@ def create_router(harness: BaseHarness, *, prefix: str = "") -> APIRouter:
                 raise HTTPException(status_code=404, detail="Session not found")
             return SessionResponse(
                 session_id=session_id,
-                started_at="",
-                last_active="",
+                started_at=info.get("started_at", ""),
+                last_active=info.get("last_active", ""),
                 turn_count=info.get("turn_count", 0),
                 status=SessionStatus.ACTIVE,
             )
