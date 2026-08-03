@@ -28,7 +28,6 @@ from h3_harness import (
     add_middleware,
     create_router,
 )
-from h3_harness.protocol import LLMMessage
 
 
 class LangChainHarness(BaseHarness):
@@ -46,11 +45,11 @@ class LangChainHarness(BaseHarness):
 
     async def on_process(self, req):
         """Kick off the LangChain pipeline via an LLM_CALL."""
-        # Convert the incoming Message to the LLMMessage format expected by Hermes
-        llm_messages = [LLMMessage(role="user", content=req.message.content)]
+        # Convert the incoming Message to the message dict format expected by LLMCall
+        llm_messages = [{"role": "user", "content": req.message.content}]
         # Include conversation history if available
         for entry in req.context.history:
-            llm_messages.append(LLMMessage(role=entry.role, content=entry.content))
+            llm_messages.append({"role": entry.role, "content": entry.content})
 
         return Decision(
             decision=DecisionType.LLM_CALL,
@@ -73,11 +72,11 @@ class LangChainHarness(BaseHarness):
         - text_sent    → finish the session with END
         - anything else → END (safety fallback)
         """
-        result_type = req.result.type if req.result else None
+        result_type = req.result.get("type") if req.result else None
 
         if result_type == ResultType.LLM_RESPONSE and not self._sent_text:
             # Extract the assistant's reply from the result data
-            data = req.result.data or {}
+            data = req.result.get("data") or {}
             content = data.get("content", "") or "(no response from LLM)"
             self._sent_text = True
             return Decision(
