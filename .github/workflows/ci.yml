@@ -33,5 +33,29 @@ jobs:
       - name: Build
         run: make build
 
+      - name: Verify wheel contains package __init__.py files
+        # Regression check for DF-001: an unanchored `_*.py` gitignore pattern
+        # made hatchling exclude src/h3_harness/__init__.py from wheels,
+        # producing an empty namespace package on non-editable installs.
+        # `make build` imports from the source tree, so it cannot catch this.
+        run: |
+          python -m pip wheel . --no-deps -w dist/ -q
+          python - <<'EOF'
+          import glob, sys, zipfile
+
+          wheels = glob.glob("dist/*.whl")
+          assert len(wheels) == 1, f"expected exactly one wheel, got {wheels}"
+          names = set(zipfile.ZipFile(wheels[0]).namelist())
+          required = {
+              "h3_harness/__init__.py",
+              "h3_harness/examples/__init__.py",
+          }
+          missing = sorted(required - names)
+          if missing:
+              print(f"FAIL: wheel {wheels[0]} is missing: {missing}")
+              sys.exit(1)
+          print(f"OK: wheel {wheels[0]} contains {len(required)} required __init__.py files")
+          EOF
+
       - name: Test
         run: make test
