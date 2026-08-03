@@ -42,8 +42,14 @@ As of 2026-08-03 (dogfood run):
 ```python
 from fastapi import FastAPI
 from h3_harness import (
-    BaseHarness, Decision, DecisionType, End, TextResponse, create_router,
+    BaseHarness,
+    Decision,
+    DecisionType,
+    End,
+    TextResponse,
+    create_router,
 )
+
 
 class MyHarness(BaseHarness):
     async def on_process(self, req):
@@ -51,8 +57,10 @@ class MyHarness(BaseHarness):
             decision=DecisionType.TEXT,
             text=TextResponse(content=f"Hello: {req.message.content}", finished=True),
         )
+
     async def on_result(self, req):
         return Decision(decision=DecisionType.END, end=End(reason="task_complete"))
+
 
 app = FastAPI()
 app.include_router(create_router(MyHarness()))

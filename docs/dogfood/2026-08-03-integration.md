@@ -16,9 +16,17 @@ against the public SDK surface only (`from h3_harness import ...`).
 ```python
 from fastapi import FastAPI
 from h3_harness import (
-    BaseHarness, Decision, DecisionType, End, LLMCall, TextResponse,
-    ToolCall, add_middleware, create_router,
+    BaseHarness,
+    Decision,
+    DecisionType,
+    End,
+    LLMCall,
+    TextResponse,
+    ToolCall,
+    add_middleware,
+    create_router,
 )
+
 
 class TodoBrain(BaseHarness):
     def __init__(self):
@@ -28,55 +36,87 @@ class TodoBrain(BaseHarness):
 
     async def on_process(self, req) -> Decision:
         sid = req.session_id
-        self._sessions[sid] = {"started_at": __import__("time").time(),
-                               "turn_count": self._sessions.get(sid, {}).get("turn_count", 0) + 1}
+        self._sessions[sid] = {
+            "started_at": __import__("time").time(),
+            "turn_count": self._sessions.get(sid, {}).get("turn_count", 0) + 1,
+        }
         content = req.message.content.strip().lower()
-        history = list(req.context.history)          # battery convention #1
-        streaming = "do not finish" in content       # battery convention #3
+        history = list(req.context.history)  # battery convention #1
+        streaming = "do not finish" in content  # battery convention #3
         finished = not streaming
 
         if content.startswith("add "):
             task = req.message.content[4:].strip()
-            return Decision(decision=DecisionType.TOOL_CALL,
-                            tool_call=ToolCall(name="todo_add",
-                                               params={"session_id": sid, "task": task}),
-                            history=history)
+            return Decision(
+                decision=DecisionType.TOOL_CALL,
+                tool_call=ToolCall(
+                    name="todo_add", params={"session_id": sid, "task": task}
+                ),
+                history=history,
+            )
         if content in ("list", "ls"):
             todos = self._todos.get(sid, [])
             body = "\n".join(f"- {t}" for t in todos) if todos else "(empty)"
-            return Decision(decision=DecisionType.TEXT,
-                            text=TextResponse(content=f"Your todos:\n{body}", finished=finished),
-                            history=history)
-        if not req.context.models:                   # battery convention #2
-            return Decision(decision=DecisionType.TEXT,
-                            text=TextResponse(content="No models available — try 'add X' or 'list'.",
-                                              finished=finished), history=history)
-        return Decision(decision=DecisionType.LLM_CALL,
-                        llm_call=LLMCall(model=req.context.models[0].name,
-                                         messages=[{"role": "user", "content": req.message.content}],
-                                         max_tokens=128), history=history)
+            return Decision(
+                decision=DecisionType.TEXT,
+                text=TextResponse(content=f"Your todos:\n{body}", finished=finished),
+                history=history,
+            )
+        if not req.context.models:  # battery convention #2
+            return Decision(
+                decision=DecisionType.TEXT,
+                text=TextResponse(
+                    content="No models available — try 'add X' or 'list'.",
+                    finished=finished,
+                ),
+                history=history,
+            )
+        return Decision(
+            decision=DecisionType.LLM_CALL,
+            llm_call=LLMCall(
+                model=req.context.models[0].name,
+                messages=[{"role": "user", "content": req.message.content}],
+                max_tokens=128,
+            ),
+            history=history,
+        )
 
     async def on_result(self, req) -> Decision:
-        result = req.result or {}                    # req.result is a DICT — use .get()
+        result = req.result or {}  # req.result is a DICT — use .get()
         if result.get("type") == "tool_result":
             data = result.get("data") or {}
             if data.get("tool_name") == "todo_add":
-                self._todos.setdefault(req.session_id, []).append(data.get("params", {}).get("task", "?"))
-                return Decision(decision=DecisionType.TEXT,
-                                text=TextResponse(content=f"Added (now {len(self._todos[req.session_id])} todos)", finished=True))
+                self._todos.setdefault(req.session_id, []).append(
+                    data.get("params", {}).get("task", "?")
+                )
+                return Decision(
+                    decision=DecisionType.TEXT,
+                    text=TextResponse(
+                        content=f"Added (now {len(self._todos[req.session_id])} todos)",
+                        finished=True,
+                    ),
+                )
         if result.get("type") == "llm_response":
-            return Decision(decision=DecisionType.TEXT,
-                            text=TextResponse(content=(result.get("data") or {}).get("content") or "(no reply)", finished=True))
+            return Decision(
+                decision=DecisionType.TEXT,
+                text=TextResponse(
+                    content=(result.get("data") or {}).get("content") or "(no reply)",
+                    finished=True,
+                ),
+            )
         if result.get("type") == "text_sent":
             return Decision(decision=DecisionType.END, end=End(reason="task_complete"))
-        return Decision(decision=DecisionType.END, end=End(reason="task_complete", summary="done"))
+        return Decision(
+            decision=DecisionType.END, end=End(reason="task_complete", summary="done")
+        )
 
     def get_session_info(self, session_id: str) -> dict | None:
         return self._sessions.get(session_id)
 
+
 app = FastAPI()
 app.include_router(create_router(TodoBrain()))
-add_middleware(app)   # request logging
+add_middleware(app)  # request logging
 ```
 
 Full runnable version (with uvicorn runner): see the dogfood run's consumer at
