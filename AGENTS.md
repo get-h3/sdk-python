@@ -48,6 +48,11 @@ app.include_router(create_router(MyHarness()))
 
 - GitReins quality gate mandatory
 - Must pass `h3-test` from get-h3/shim before release
+- To score 43/43 on the battery: echo `context.history` in every Decision,
+  never issue `llm_call` when `context.models` is empty, and return
+  `text.finished=false` for "do not finish" prompts. See README → *Passing the
+  battery (h3-test compliance)*. `src/h3_harness/examples/echo.py` is the
+  battery-ready template.
 
 ## Reference
 
