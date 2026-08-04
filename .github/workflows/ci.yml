@@ -59,3 +59,54 @@ jobs:
 
       - name: Test
         run: make test
+
+  # GAP-001: the 43/43 h3-test claim (README "Passing the battery",
+  # examples/echo.py as 43/43 template — DF-004) was previously verified
+  # only by hand; a protocol-model or router refactor could silently break
+  # compliance while CI stayed green. This job serves the canonical echo
+  # harness and runs the real battery against it — h3-test exits non-zero
+  # on any failure, so CI now gates compliance. Runs as its own job (not
+  # part of the matrix) so the battery executes exactly once.
+  battery:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install SDK (editable)
+        run: uv pip install --system -e .
+
+      - name: Install h3-test battery CLI
+        run: uv pip install --system hermes-h3-shim
+
+      - name: Start Echo harness (battery port 9191)
+        run: |
+          python scripts/serve_echo.py > battery-server.log 2>&1 &
+          echo $! > battery-server.pid
+
+      - name: Wait for harness health
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:9191/v1/health; then
+              echo "Harness healthy after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Harness never became healthy; server log:"
+          cat battery-server.log || true
+          exit 1
+
+      - name: Run h3-test battery (43/43 gate)
+        run: |
+          set -o pipefail
+          h3-test --endpoint http://localhost:9191 | tee battery.log
+          grep -q "43/43" battery.log
