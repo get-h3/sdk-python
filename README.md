@@ -128,3 +128,4 @@ make fmt       # ruff format
 
 - Spec: [get-h3/h3 — specs/04-SDK-Libraries.md](https://github.com/get-h3/h3/blob/main/specs/04-SDK-Libraries.md)
 - Protocol: [get-h3/protocol](https://github.com/get-h3/protocol)
+- API reference: [docs/api/index.md](docs/api/index.md)
