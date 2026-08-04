@@ -81,11 +81,17 @@ jobs:
       - name: Install uv
         run: pip install uv
 
+      - name: Checkout shim repo (h3-test battery CLI)
+        uses: actions/checkout@v4
+        with:
+          repository: get-h3/shim
+          path: shim
+
       - name: Install SDK (editable)
         run: uv pip install --system -e .
 
-      - name: Install h3-test battery CLI
-        run: uv pip install --system hermes-h3-shim
+      - name: Install h3-test battery CLI (path-install from checkout — shim unpublished on PyPI, P3-10 blocked)
+        run: uv pip install --system ./shim
 
       - name: Start Echo harness (battery port 9191)
         run: |
