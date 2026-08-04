@@ -39,9 +39,18 @@ from fastapi import FastAPI
 
 class MyHarness(BaseHarness):
     async def on_process(self, req):
+        # Echo conversation history from context (battery: history preserved).
+        history = list(req.context.history)
+        # Streaming: "do not finish" in message -> unfinished text.
+        streaming = "do not finish" in req.message.content
+        finished = not streaming
         return Decision(
             decision=DecisionType.TEXT,
-            text=TextResponse(content="Hello from Python!", finished=True),
+            text=TextResponse(
+                content=f"Echo: {req.message.content}",
+                finished=finished,
+            ),
+            history=history,
         )
 
     async def on_result(self, req):
@@ -80,8 +89,10 @@ pip install hermes-h3-shim
 h3-test --endpoint http://localhost:9191   # exit 0 = compliant
 ```
 
-A naive harness that follows only the Quickstart above scores **41/43**. The
-three conventions the battery checks (beyond "return a Decision") are:
+The Quickstart harness above implements all three conventions and is fully
+battery-compliant (**43/43**). If you modify it, keep the conventions intact —
+a naive harness that drops them scores **41/43**. The three conventions the
+battery checks (beyond "return a Decision") are:
 
 1. **Echo `context.history` in every Decision.** The battery sends a session
    with prior history and asserts it flows back through the response
