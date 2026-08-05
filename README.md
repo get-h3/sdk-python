@@ -85,7 +85,8 @@ The gate for any H3 harness is the **test battery** (`test_battery.py` from
 Run it against any running harness endpoint:
 
 ```bash
-pip install hermes-h3-shim
+# The shim is not yet published to PyPI — install from source (get-h3/shim)
+pip install git+https://github.com/get-h3/shim
 h3-test --endpoint http://localhost:9191   # exit 0 = compliant
 ```
 
