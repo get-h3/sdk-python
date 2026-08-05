@@ -96,3 +96,12 @@
 {"from":"tests/test_example_langchain.py","to":"pkg:h3_harness","rel":"imports","provenance":"ast_exact","confidence":1.0}
 {"from":"tests/test_example_langchain.py","to":"pkg:h3_harness.examples.langchain_agent","rel":"imports","provenance":"ast_exact","confidence":1.0}
 {"from":"tests/test_example_langchain.py","to":"pkg:h3_harness.testbed","rel":"imports","provenance":"ast_exact","confidence":1.0}
+{"from":"scripts/serve_echo.py","to":"pkg:uvicorn","rel":"imports","provenance":"ast_exact","confidence":1.0}
+{"from":"scripts/serve_echo.py","to":"pkg:fastapi","rel":"imports","provenance":"ast_exact","confidence":1.0}
+{"from":"scripts/serve_echo.py","to":"pkg:h3_harness","rel":"imports","provenance":"ast_exact","confidence":1.0}
+{"from":"scripts/serve_echo.py","to":"pkg:h3_harness.examples.echo","rel":"imports","provenance":"ast_exact","confidence":1.0}
+{"from":"tests/test_quickstart.py","to":"pkg:re","rel":"imports","provenance":"ast_exact","confidence":1.0}
+{"from":"tests/test_quickstart.py","to":"pkg:pathlib","rel":"imports","provenance":"ast_exact","confidence":1.0}
+{"from":"tests/test_quickstart.py","to":"pkg:pytest","rel":"imports","provenance":"ast_exact","confidence":1.0}
+{"from":"tests/test_quickstart.py","to":"pkg:h3_harness","rel":"imports","provenance":"ast_exact","confidence":1.0}
+{"from":"tests/test_quickstart.py","to":"pkg:h3_harness.protocol","rel":"imports","provenance":"ast_exact","confidence":1.0}
