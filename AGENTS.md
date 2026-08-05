@@ -24,9 +24,18 @@ from fastapi import FastAPI
 
 class MyHarness(BaseHarness):
     async def on_process(self, req):
+        # Echo conversation history from context (battery: history preserved).
+        history = list(req.context.history)
+        # Streaming: "do not finish" in message -> unfinished text.
+        streaming = "do not finish" in req.message.content
+        finished = not streaming
         return Decision(
             decision=DecisionType.TEXT,
-            text=TextResponse(content="Hello from Python!", finished=True),
+            text=TextResponse(
+                content=f"Echo: {req.message.content}",
+                finished=finished,
+            ),
+            history=history,
         )
 
     async def on_result(self, req):
