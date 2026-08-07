@@ -8,6 +8,21 @@ Python SDK for building H3-compliant agent harnesses.
 pip install h3-harness-sdk
 ```
 
+### Install fallback (source / git)
+
+If a release isn't published to PyPI yet (or you want the latest unreleased
+changes), install directly from the repository:
+
+```bash
+# From git
+pip install git+https://github.com/get-h3/sdk-python.git
+
+# Editable source install (development)
+git clone https://github.com/get-h3/sdk-python.git
+cd sdk-python
+pip install -e .
+```
+
 ## Quickstart
 
 ```python
