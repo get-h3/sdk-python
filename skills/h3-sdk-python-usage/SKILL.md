@@ -5,7 +5,7 @@ description: >-
   harnesses that Hermes Core can use as a brain. Install path, quickstart,
   the 3 battery conventions, pitfalls. Load this before touching this repo or
   building a harness with h3-harness-sdk.
-version: 1.0.0
+version: 1.0.1
 category: software-development
 ---
 
@@ -22,20 +22,22 @@ to over HTTP. Compliance is enforced by the official test battery
 > Subclass `BaseHarness`, implement `on_process` + `on_result`, mount
 > `create_router(harness)` on FastAPI → your harness speaks the H3 protocol.
 
-## ⚠️ Install (read this first — the documented path is broken)
+## Install
 
-As of 2026-08-03 (dogfood run):
+**Last verified: 2026-08-07** (PyPI 0.1.0 live since 2026-08-03; wheel `__init__.py`
+fix DF-001 and langchain example fix DF-003 confirmed in-tree).
 
-1. `pip install h3-harness-sdk` — ❌ **fails** (not on PyPI). Don't try it.
-2. `pip install <repo-path>` / git install — ❌ **installs a broken wheel**:
-   hatchling drops `__init__.py` (`.gitignore` `_*.py` pattern — see
-   `docs/dogfood/diagnostics.md`). `from h3_harness import BaseHarness` →
-   ImportError.
-3. **✅ The only working path:**
+1. **✅ `pip install h3-harness-sdk`** — the package IS published on PyPI
+   (0.1.0). This is the primary install path.
+2. **From-source fallback** (pre-release / want repo HEAD):
    ```bash
+   pip install git+https://github.com/get-h3/sdk-python
+   # or editable for development:
    git clone https://github.com/get-h3/sdk-python
-   pip install -e /path/to/sdk-python   # editable install
+   pip install -e /path/to/sdk-python
    ```
+   (The wheel now contains `h3_harness/__init__.py` — DF-001 anchored the
+   `_*.py` gitignore pattern to `/_*.py`; see `docs/dogfood/diagnostics.md`.)
 
 ## Quickstart (works)
 
@@ -76,7 +78,8 @@ GET/DELETE /v1/sessions/{id}, POST /v1/cancel, GET /v1/health
 ```
 
 - `req.result` is a plain **dict** — use `req.result.get("type")`, NOT
-  `req.result.type` (the shipped langchain example does the latter and crashes).
+  `req.result.type` (the shipped langchain example was fixed to use `.get()`
+  — DF-003 — and is covered by regression tests).
 - `LLMCall.messages` is `list[dict]` — pass plain dicts, not `LLMMessage` objects.
 - Exceptions in your handlers are caught by the router and returned as
   `{"decision":"end","reason":"error","summary":...}` with HTTP 200 — check
@@ -121,11 +124,13 @@ h3-test --endpoint http://127.0.0.1:9191        # 43/43 + exit 0 = compliant
   the wheel. After packaging changes, build a wheel and inspect it
   (`pip wheel --no-deps . && unzip -l dist/*.whl`) — it MUST contain
   `h3_harness/__init__.py`.
-- **Don't** use the langchain example as a template yet — it crashes
-  (board task DF-003).
+- **Do** use `src/h3_harness/examples/langchain_agent.py` as a LangChain
+  integration reference — the dict-access bugs (DF-003) are fixed.
 - **Don't** PUT scheduler cooldown for this project — fleet.toml pins it.
 - **Do** keep `.coding-hermes/tasks.md` present in v2.1 `|||` format
   (GitReins `validate-board-format.py` requires it); the live board is
-  `.coding-hermes/board/tasks.parquet` (DuckDB).
+  JSONL-canonical — `.coding-hermes/board/{events,tasks,fixtures}.jsonl`
+  are tracked and authoritative; `board.db` and `*.parquet` are local caches
+  (JSONL-NORM-001, Bane 2026-08-07 directive).
 - **Do** check `docs/dogfood/diagnostics.md` before debugging packaging or
   battery failures — the root causes are already recorded there.
