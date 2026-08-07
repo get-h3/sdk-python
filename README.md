@@ -119,7 +119,7 @@ point for your own harness.
 
 ```bash
 make install   # create venv + install deps
-make build     # verify imports
+make build     # build wheel (and sdist) into dist/
 make test      # run tests
 make lint      # ruff check
 make fmt       # ruff format

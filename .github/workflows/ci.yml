@@ -37,9 +37,9 @@ jobs:
         # Regression check for DF-001: an unanchored `_*.py` gitignore pattern
         # made hatchling exclude src/h3_harness/__init__.py from wheels,
         # producing an empty namespace package on non-editable installs.
-        # `make build` imports from the source tree, so it cannot catch this.
+        # `make build` (GAP-009) builds the real wheel into dist/, so this
+        # check validates the actual artifact CI ships.
         run: |
-          python -m pip wheel . --no-deps -w dist/ -q
           python - <<'EOF'
           import glob, sys, zipfile
 

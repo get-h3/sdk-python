@@ -11,7 +11,8 @@ $(VENV):
 install: $(VENV)
 
 build:
-	uv run python -c "import h3_harness; print('build: OK')"
+	uv build
+	@echo "build: OK — dist/ now contains the wheel (and sdist)"
 
 test:
 	uv run pytest -x --tb=short -q
