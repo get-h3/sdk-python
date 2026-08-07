@@ -28,3 +28,4 @@ build/
 # DuckDB board local cache (rebuildable from Parquet)
 .coding-hermes/board/board.db
 .coding-hermes/board/board.db.wal
+.coding-hermes/board/*.parquet
