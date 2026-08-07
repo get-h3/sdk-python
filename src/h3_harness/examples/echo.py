@@ -15,7 +15,7 @@ Run:
     #   POST /v1/process → send a message, get it echoed back
 """
 
-import time
+from datetime import datetime, timezone
 
 from fastapi import FastAPI
 
@@ -47,7 +47,7 @@ class EchoHarness(BaseHarness):
         finished = not streaming
 
         self._sessions[sid] = {
-            "started_at": time.time(),
+            "started_at": datetime.now(timezone.utc).isoformat(),
             "turn_count": self._sessions.get(sid, {}).get("turn_count", 0) + 1,
         }
 

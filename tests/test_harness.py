@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -59,6 +61,13 @@ class SessionTrackingHarness(BaseHarness):
         },
         # Omitted started_at/last_active — exercises the empty-string defaults.
         "sess-minimal": {"turn_count": 3},
+        # Epoch-seconds floats (what the canonical echo example used to store)
+        # — exercises router coercion to ISO-8601 strings (BUG-001).
+        "sess-epoch": {
+            "started_at": 1786080101.634639,
+            "last_active": 1786080500.0,
+            "turn_count": 4,
+        },
     }
 
     async def on_process(self, req):
@@ -202,6 +211,19 @@ def test_get_session_tracking_defaults_when_timestamps_omitted(client_tracking):
 def test_get_session_tracking_unknown_session_404(client_tracking):
     r = client_tracking.get("/v1/sessions/sess-unknown")
     assert r.status_code == 404
+
+
+def test_get_session_coerces_epoch_timestamps_to_iso(client_tracking):
+    """BUG-001: epoch-float started_at/last_active must not 500 SessionResponse."""
+    r = client_tracking.get("/v1/sessions/sess-epoch")
+    assert r.status_code == 200
+    body = r.json()
+    assert isinstance(body["started_at"], str) and body["started_at"]
+    assert isinstance(body["last_active"], str) and body["last_active"]
+    # Coerced values must be ISO-8601 parseable (protocol string field).
+    datetime.fromisoformat(body["started_at"])
+    datetime.fromisoformat(body["last_active"])
+    assert body["turn_count"] == 4
 
 
 # ── DELETE /v1/sessions/{id} ────────────────────────────────────────

@@ -22,6 +22,7 @@ from __future__ import annotations
 import logging
 import time
 from abc import ABC, abstractmethod
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -110,6 +111,23 @@ def _error_response(status_code: int, code: ErrorCode, message: str) -> JSONResp
     )
 
 
+def _iso_timestamp(value: object) -> str:
+    """Coerce a session timestamp to the protocol's ISO-8601 string form.
+
+    SessionResponse.started_at / last_active are protocol strings. Harnesses
+    may store epoch seconds (``time.time()`` — the canonical echo example
+    did) or ISO strings; coercing here keeps the wire format valid instead
+    of 500ing on pydantic validation.
+    """
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, (int, float)):
+        return datetime.fromtimestamp(float(value), tz=timezone.utc).isoformat()
+    return str(value)
+
+
 def create_router(harness: BaseHarness, *, prefix: str = "") -> APIRouter:
     """Create a FastAPI router wired to the given harness.
 
@@ -182,8 +200,8 @@ def create_router(harness: BaseHarness, *, prefix: str = "") -> APIRouter:
                 raise HTTPException(status_code=404, detail="Session not found")
             return SessionResponse(
                 session_id=session_id,
-                started_at=info.get("started_at", ""),
-                last_active=info.get("last_active", ""),
+                started_at=_iso_timestamp(info.get("started_at")),
+                last_active=_iso_timestamp(info.get("last_active")),
                 turn_count=info.get("turn_count", 0),
                 status=SessionStatus.ACTIVE,
             )
