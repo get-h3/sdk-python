@@ -5,9 +5,10 @@ Run with:
 
 Covers: Pydantic model construction/validation, JSON serialization,
 FastAPI router round-trips (process, health), request-logging middleware,
-and MockHermes round-trips. Small rounds configured in pyproject.toml
-(benchmark_min_rounds = 3, benchmark_max_time = 0.5) so the suite stays
-snappy enough to run in CI on every change.
+and MockHermes round-trips. Small rounds configured via the module-level
+benchmark marker below (GAP-008: pytest-benchmark 5.2.3 registers no ini
+keys, so addopts flags crashed bare pytest without the plugin) so the suite
+stays snappy enough to run in CI on every change.
 """
 
 from __future__ import annotations
@@ -31,6 +32,10 @@ from h3_harness.protocol import (
 from h3_harness.testbed import MockHermes
 
 pytest.importorskip("pytest_benchmark")
+
+# Small benchmark rounds so the perf suite stays snappy in CI (was
+# pyproject.toml addopts; GAP-008 — see module docstring).
+pytestmark = pytest.mark.benchmark(min_rounds=3, max_time=0.5)
 
 
 class EchoHarness(BaseHarness):

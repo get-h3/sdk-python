@@ -50,6 +50,8 @@ select = ["E", "F", "I", "N", "W", "UP"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
-# Small benchmark rounds so the perf suite stays snappy in CI. Passed via
-# addopts because pytest-benchmark 5.2.3 registers no ini keys of its own.
-addopts = ["--benchmark-min-rounds=3", "--benchmark-max-time=0.5"]
+# NOTE: benchmark tuning lives on the tests themselves
+# (@pytest.mark.benchmark(min_rounds=3, max_time=0.5) in test_benchmarks.py)
+# because pytest-benchmark 5.2.3 registers no ini keys — hardcoding
+# --benchmark-* flags in addopts makes bare `python3 -m pytest` crash with
+# "unrecognized arguments" on installs without the plugin (GAP-008).
