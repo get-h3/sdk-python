@@ -105,3 +105,6 @@
 {"from":"tests/test_quickstart.py","to":"pkg:pytest","rel":"imports","provenance":"ast_exact","confidence":1.0}
 {"from":"tests/test_quickstart.py","to":"pkg:h3_harness","rel":"imports","provenance":"ast_exact","confidence":1.0}
 {"from":"tests/test_quickstart.py","to":"pkg:h3_harness.protocol","rel":"imports","provenance":"ast_exact","confidence":1.0}
+{"from":"src/h3_harness/harness.py","to":"pkg:datetime","rel":"imports","provenance":"ast_exact","confidence":1.0}
+{"from":"src/h3_harness/examples/echo.py","to":"pkg:datetime","rel":"imports","provenance":"ast_exact","confidence":1.0}
+{"from":"tests/test_harness.py","to":"pkg:datetime","rel":"imports","provenance":"ast_exact","confidence":1.0}
