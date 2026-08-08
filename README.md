@@ -97,7 +97,7 @@ assert decision.text.content == "Echo: Hello!"
 ## Passing the battery (h3-test compliance)
 
 The gate for any H3 harness is the **test battery** (`test_battery.py` from
-[get-h3/shim](https://github.com/get-h3/shim) — 43 tests across 6 categories).
+[get-h3/shim](https://github.com/get-h3/shim) — 44 tests across 6 categories).
 Run it against any running harness endpoint:
 
 ```bash
