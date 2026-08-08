@@ -1,6 +1,6 @@
 # H3 Harness SDK — API Reference
 
-Hand-written API reference for `h3-harness-sdk` **0.1.0** (package `h3_harness`).
+Hand-written API reference for `h3-harness-sdk` **0.1.2** (package `h3_harness`).
 
 This reference documents the public surface of the SDK exactly as implemented in
 `src/h3_harness/` at the time of writing. If anything here disagrees with a
@@ -16,7 +16,7 @@ end the session).
 
 | Module | Contents |
 |---|---|
-| `h3_harness` | Top-level re-exports (`__all__`): `BaseHarness`, `create_router`, `add_middleware`, and 21 protocol models/enums. `__version__` = `"0.1.0"`. |
+| `h3_harness` | Top-level re-exports (`__all__`): `BaseHarness`, `create_router`, `add_middleware`, and 21 protocol models/enums. `__version__` = `"0.1.2"`. |
 | `h3_harness.protocol` | All 33 Pydantic models and enums of the H3 v1 protocol (generated from `get-h3/protocol` JSON Schema). 12 of them are **not** re-exported at the top level — import them from `h3_harness.protocol`. |
 | `h3_harness.harness` | `BaseHarness` (abstract base class) and `create_router` (FastAPI router factory). |
 | `h3_harness.middleware` | `add_middleware` — request logging for FastAPI apps. |
