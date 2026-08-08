@@ -184,8 +184,16 @@ def create_router(harness: BaseHarness, *, prefix: str = "") -> APIRouter:
     @router.post("/v1/cancel")
     async def cancel(req: CancelRequest):
         try:
+            # Battery (test_5_9b cancel_unknown_session): cancelling a
+            # nonexistent session must 404 when the harness tracks sessions.
+            if hasattr(harness, "get_session_info"):
+                info = harness.get_session_info(req.session_id)  # type: ignore[union-attr]
+                if info is None:
+                    raise HTTPException(status_code=404, detail="Session not found")
             confirmed = await harness.on_cancel(req)
             return {"session_id": req.session_id, "cancelled": confirmed}
+        except HTTPException:
+            raise
         except Exception as exc:
             logger.exception("on_cancel failed")
             raise HTTPException(status_code=500, detail=str(exc))

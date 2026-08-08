@@ -1,8 +1,8 @@
 """Serve EchoHarness for the h3-test battery (CI + local).
 
 The H3 compliance gate is the test battery (``hermes-h3-shim``:
-``h3-test --endpoint <url>``, 43 tests across 6 categories, exit 0 =
-compliant). This runner serves the canonical 43/43 template
+``h3-test --endpoint <url>``, 44 tests across 6 categories, exit 0 =
+compliant). This runner serves the canonical 44/44 template
 (``h3_harness.examples.echo.EchoHarness``) on the battery port so CI and
 local developers can verify compliance without touching the example:
 ``echo.py`` builds its app only inside ``if __name__ == "__main__":`` and

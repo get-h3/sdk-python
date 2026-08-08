@@ -26,6 +26,8 @@ pip install -e .
 ## Quickstart
 
 ```python
+from datetime import datetime, timezone
+
 from h3_harness import (
     BaseHarness,
     Decision,
@@ -38,12 +40,23 @@ from fastapi import FastAPI
 
 
 class MyHarness(BaseHarness):
+    def __init__(self):
+        # Track sessions so cancel/session lookups 404 on unknown ids
+        # (battery: test_5_9b cancel_unknown_session, test_5_10 session_not_found).
+        self._sessions: dict[str, dict] = {}
+
     async def on_process(self, req):
         # Echo conversation history from context (battery: history preserved).
         history = list(req.context.history)
         # Streaming: "do not finish" in message -> unfinished text.
         streaming = "do not finish" in req.message.content
         finished = not streaming
+        self._sessions[req.session_id] = {
+            "started_at": datetime.now(timezone.utc).isoformat(),
+            "turn_count": (
+                self._sessions.get(req.session_id, {}).get("turn_count", 0) + 1
+            ),
+        }
         return Decision(
             decision=DecisionType.TEXT,
             text=TextResponse(
@@ -55,6 +68,9 @@ class MyHarness(BaseHarness):
 
     async def on_result(self, req):
         return Decision(decision=DecisionType.END, end=End(reason="task_complete"))
+
+    def get_session_info(self, session_id: str) -> dict | None:
+        return self._sessions.get(session_id)
 
 
 app = FastAPI()

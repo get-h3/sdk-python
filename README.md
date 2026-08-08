@@ -26,6 +26,8 @@ pip install -e .
 ## Quickstart
 
 ```python
+from datetime import datetime, timezone
+
 from h3_harness import (
     BaseHarness,
     Decision,
@@ -38,12 +40,23 @@ from fastapi import FastAPI
 
 
 class MyHarness(BaseHarness):
+    def __init__(self):
+        # Track sessions so cancel/session lookups 404 on unknown ids
+        # (battery: test_5_9b cancel_unknown_session, test_5_10 session_not_found).
+        self._sessions: dict[str, dict] = {}
+
     async def on_process(self, req):
         # Echo conversation history from context (battery: history preserved).
         history = list(req.context.history)
         # Streaming: "do not finish" in message -> unfinished text.
         streaming = "do not finish" in req.message.content
         finished = not streaming
+        self._sessions[req.session_id] = {
+            "started_at": datetime.now(timezone.utc).isoformat(),
+            "turn_count": (
+                self._sessions.get(req.session_id, {}).get("turn_count", 0) + 1
+            ),
+        }
         return Decision(
             decision=DecisionType.TEXT,
             text=TextResponse(
@@ -55,6 +68,9 @@ class MyHarness(BaseHarness):
 
     async def on_result(self, req):
         return Decision(decision=DecisionType.END, end=End(reason="task_complete"))
+
+    def get_session_info(self, session_id: str) -> dict | None:
+        return self._sessions.get(session_id)
 
 
 app = FastAPI()
@@ -90,9 +106,9 @@ pip install git+https://github.com/get-h3/shim
 h3-test --endpoint http://localhost:9191   # exit 0 = compliant
 ```
 
-The Quickstart harness above implements all three conventions and is fully
-battery-compliant (**43/43**). If you modify it, keep the conventions intact —
-a naive harness that drops them scores **41/43**. The three conventions the
+The Quickstart harness above implements all four conventions and is fully
+battery-compliant (**44/44**). If you modify it, keep the conventions intact —
+a naive harness that drops them scores **41/44**. The four conventions the
 battery checks (beyond "return a Decision") are:
 
 1. **Echo `context.history` in every Decision.** The battery sends a session
@@ -110,9 +126,14 @@ battery checks (beyond "return a Decision") are:
    sends *"Just start a thought, do not finish it yet."* and asserts the
    response has `text.finished == False` (`test_2_4_process_text_finished_false`).
    Detect streaming/unfinished intent and set `finished` accordingly.
+4. **404 unknown sessions.** The battery cancels a nonexistent session
+   (`test_5_9b cancel_unknown_session`) and GETs one
+   (`test_5_10 session_not_found`) and asserts a 404. Track sessions in the
+   harness (`get_session_info` returning `None` for unknown ids) — the router
+   turns that into the 404.
 
 The canonical battery-ready template is **[echo.py](src/h3_harness/examples/echo.py)**
-— it implements all three conventions and scores 43/43. Use it as the starting
+— it implements all four conventions and scores 44/44. Use it as the starting
 point for your own harness.
 
 ## Development

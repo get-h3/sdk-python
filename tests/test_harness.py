@@ -176,6 +176,23 @@ def test_cancel(client):
     assert body["cancelled"] is True
 
 
+def test_cancel_tracking_known_session_200(client_tracking):
+    """A tracked session cancels normally (battery test_5_9)."""
+    r = client_tracking.post(
+        "/v1/cancel", json={"session_id": "sess-tracked", "reason": "user_interrupt"}
+    )
+    assert r.status_code == 200
+    assert r.json()["cancelled"] is True
+
+
+def test_cancel_tracking_unknown_session_404(client_tracking):
+    """Battery test_5_9b: cancel on a nonexistent session must 404."""
+    r = client_tracking.post(
+        "/v1/cancel", json={"session_id": "sess-unknown", "reason": "user_interrupt"}
+    )
+    assert r.status_code == 404
+
+
 # ── GET /v1/sessions/{id} ───────────────────────────────────────────
 
 
