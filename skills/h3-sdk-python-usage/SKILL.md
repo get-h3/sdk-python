@@ -5,7 +5,7 @@ description: >-
   harnesses that Hermes Core can use as a brain. Install path, quickstart,
   the 3 battery conventions, pitfalls. Load this before touching this repo or
   building a harness with h3-harness-sdk.
-version: 1.0.1
+version: 1.0.2
 category: software-development
 ---
 
@@ -15,7 +15,7 @@ The H3 ("Hermes Harness Hooks") protocol lets an external agent system become
 the *thinking brain* of Hermes Core. This SDK is how Python developers build
 the *body* side: an **H3-compliant harness** (a FastAPI app) that Hermes talks
 to over HTTP. Compliance is enforced by the official test battery
-(`h3-test`, 43 tests, from get-h3/shim) — the gate for any harness.
+(`h3-test`, 44 tests, from get-h3/shim) — the gate for any harness.
 
 ## What the SDK promises
 
@@ -24,11 +24,11 @@ to over HTTP. Compliance is enforced by the official test battery
 
 ## Install
 
-**Last verified: 2026-08-07** (PyPI 0.1.0 live since 2026-08-03; wheel `__init__.py`
+**Last verified: 2026-08-09** (PyPI 0.1.2 live since 2026-08-08; wheel `__init__.py`
 fix DF-001 and langchain example fix DF-003 confirmed in-tree).
 
 1. **✅ `pip install h3-harness-sdk`** — the package IS published on PyPI
-   (0.1.0). This is the primary install path.
+   (0.1.2). This is the primary install path.
 2. **From-source fallback** (pre-release / want repo HEAD):
    ```bash
    pip install git+https://github.com/get-h3/sdk-python
@@ -85,7 +85,7 @@ GET/DELETE /v1/sessions/{id}, POST /v1/cancel, GET /v1/health
   `{"decision":"end","reason":"error","summary":...}` with HTTP 200 — check
   the `summary` when a session ends unexpectedly.
 
-## The 3 battery conventions (undocumented in README — REQUIRED for 43/43)
+## The 3 battery conventions (undocumented in README — REQUIRED for 44/44)
 
 1. **Echo history:** include `history=list(req.context.history)` in every
    Decision you return (test: `process_preserves_history`).
@@ -96,7 +96,7 @@ GET/DELETE /v1/sessions/{id}, POST /v1/cancel, GET /v1/health
 
 The shipped `src/h3_harness/examples/echo.py` implements all three — treat it
 as the reference implementation. A from-scratch harness following these scored
-43/43 (see `docs/dogfood/2026-08-03-integration.md` for a full example).
+44/44 (see `docs/dogfood/2026-08-03-integration.md` for a full example).
 
 ## Test without a server: MockHermes
 
@@ -115,7 +115,7 @@ assert decision.text.content == "Echo: Hello!"
 # any harness server:
 uvicorn my_harness:app --port 9191
 # THE GATE (from get-h3/shim; a binary may exist in another venv):
-h3-test --endpoint http://127.0.0.1:9191        # 43/43 + exit 0 = compliant
+h3-test --endpoint http://127.0.0.1:9191        # 44/44 + exit 0 = compliant
 ```
 
 ## Pitfalls

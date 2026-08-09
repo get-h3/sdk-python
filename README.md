@@ -75,6 +75,7 @@ class MyHarness(BaseHarness):
 
 app = FastAPI()
 app.include_router(create_router(MyHarness()))
+# Run with: uvicorn my_harness:app --port 9191
 ```
 
 ## Testbed

@@ -7,7 +7,7 @@ router and logging middleware attached.
 
 | File | Harness class | Demonstrates |
 |---|---|---|
-| [echo.py](../../src/h3_harness/examples/echo.py) | `EchoHarness` | Full H3-compliant harness: session tracking, streaming detection, history echo. The battery-ready template (43/43 on h3-test). |
+| [echo.py](../../src/h3_harness/examples/echo.py) | `EchoHarness` | Full H3-compliant harness: session tracking, streaming detection, history echo. The battery-ready template (44/44 on h3-test). |
 | [minimal.py](../../src/h3_harness/examples/minimal.py) | `MinimalHarness` | The smallest runnable harness — a starting template. |
 | [langchain_agent.py](../../src/h3_harness/examples/langchain_agent.py) | `LangChainHarness` | The LLM-call agent loop: `llm_call` → result → `text` → `end`. |
 
