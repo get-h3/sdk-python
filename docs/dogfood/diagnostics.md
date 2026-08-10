@@ -4,6 +4,8 @@
 (dogfood run 2026-08-03 + project history), and the right way to do things.
 Not raw logs — explained lessons.
 
+**Last verified:** 2026-08-10 (GAP-021 sync: battery 44/44, JSONL board)
+
 ## 1. How the SDK is built
 
 ```
@@ -82,11 +84,12 @@ the breakage; replacing `_*.py` with `/_*.py` fixed it.
 
 ## 4. Project history lessons (from git log)
 
-- The board migrated from `tasks.md` → DuckDB parquet (BOARD-V2, tick #35);
-  `tasks.md` was archived to `tasks.md.bak`. Board files:
-  `.coding-hermes/board/{schema.sql,tasks.parquet,events.parquet,board.db}`.
+- The board migrated from `tasks.md` → DuckDB parquet (BOARD-V2, tick #35),
+  then → JSONL canonical (JSONL-NORM-001, tick #83; board.db/parquet are
+  untracked rebuildable caches). Board files:
+  `.coding-hermes/board/{schema.sql,tasks.jsonl,events.jsonl,fixtures.jsonl}`.
 - `E2E-001` (per-tick battery run) is the project's own self-check: the shipped
-  echo example scores 43/43 against `h3-test`. **The echo example is the
+  echo example scores 44/44 against `h3-test`. **The echo example is the
   reference implementation** — when in doubt about a battery convention,
   read `src/h3_harness/examples/echo.py` (it implements all three DF-004
   conventions).
@@ -104,5 +107,6 @@ the breakage; replacing `_*.py` with `/_*.py` fixed it.
 2. Run the gate: `h3-test --endpoint http://127.0.0.1:9191` against your harness.
 3. After packaging changes, ALWAYS `pip wheel --no-deps .` and inspect the
    wheel's file list (`unzip -l`) — CI does not.
-4. Keep the `.coding-hermes/board/tasks.parquet` in sync via the board tooling
-   (`python3 ~/.hermes/scripts/migrate-board-to-duckdb.py .`).
+4. Board storage is JSONL-canonical (JSONL-NORM-001): `tasks.jsonl` +
+   `events.jsonl` are the git-tracked store; `board.db`/`*.parquet` are
+   untracked rebuildable caches — never commit them.

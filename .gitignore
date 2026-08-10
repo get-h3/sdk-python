@@ -25,9 +25,13 @@ build/
 # pytest-benchmark cache (regenerated on every run)
 .benchmarks/
 
-# DuckDB board local cache (rebuildable from Parquet)
+# DuckDB board local cache (rebuildable from JSONL canonical store)
 .coding-hermes/board/board.db
 .coding-hermes/board/board.db.wal
 .coding-hermes/board/*.parquet
 
 .coding-hermes/board/*.duckdb
+
+# Stale E2E ghost checkpoints (GAP-020, 2026-08-10) — battery results
+# live in CI logs / docs/dogfood/, never in repo output dirs
+e2e-output/
