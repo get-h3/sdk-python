@@ -254,6 +254,25 @@ def test_delete_session(client):
     assert body["terminated"] is True
 
 
+def test_delete_session_tracking_known_session_200(client_tracking):
+    """A tracked session terminates normally."""
+    r = client_tracking.delete("/v1/sessions/sess-tracked")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["session_id"] == "sess-tracked"
+    assert body["terminated"] is True
+
+
+def test_delete_session_tracking_unknown_session_404(client_tracking):
+    """GAP-019: DELETE on a nonexistent tracked session must 404.
+
+    Matches cancel (battery test_5_9b) and GET (test_5_10) semantics —
+    all three session-existence endpoints now validate consistently.
+    """
+    r = client_tracking.delete("/v1/sessions/sess-unknown")
+    assert r.status_code == 404
+
+
 # ── Error handling ──────────────────────────────────────────────────
 
 

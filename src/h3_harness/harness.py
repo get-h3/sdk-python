@@ -226,8 +226,18 @@ def create_router(harness: BaseHarness, *, prefix: str = "") -> APIRouter:
     @router.delete("/v1/sessions/{session_id}")
     async def terminate_session(session_id: str):
         try:
+            # GAP-019: session-existence validation matching cancel
+            # (battery test_5_9b) and GET (test_5_10) — deleting a
+            # nonexistent session must 404 when the harness tracks
+            # sessions, not silently return 200 terminated.
+            if hasattr(harness, "get_session_info"):
+                info = harness.get_session_info(session_id)  # type: ignore[union-attr]
+                if info is None:
+                    raise HTTPException(status_code=404, detail="Session not found")
             await harness.on_session_terminate(session_id)
             return {"session_id": session_id, "terminated": True}
+        except HTTPException:
+            raise
         except Exception as exc:
             logger.exception("on_session_terminate failed")
             raise HTTPException(status_code=500, detail=str(exc))
