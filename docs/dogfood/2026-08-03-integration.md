@@ -141,7 +141,7 @@ Once installed editable, everything the SDK promises works:
 - Full Hermes loop over HTTP: `process → tool_call → result(tool_result) → text → process → llm_call → result(llm_response) → text → result(text_sent) → end(task_complete)` — ✅ flawlessly
 - Session endpoints: GET known session → 200 with turn_count; unknown → 404; DELETE → 200; POST cancel → 200 ✅
 - Validation: malformed body → 422 with clear pydantic detail ✅
-- **Official `h3-test` battery: 43/43 PASSED** (0.33s, p50 1.43ms) with the TodoBrain harness ✅
+- **Official `h3-test` battery: 44/44 PASSED** (0.33s, p50 1.43ms) with the TodoBrain harness ✅ *(compliance target synced 2026-08-11: the battery is 44 tests since 2026-08-08; last-verified 44/44 at tick #123, 2026-08-11)*
 - Stress: 50 rapid calls, 10 concurrent sessions, memory flat — all ✅
 
 The decision/result loop is clean, fast, and the router's error containment
@@ -184,7 +184,7 @@ h3-test --endpoint http://127.0.0.1:9191
 ## 6. Verdict
 
 **PROMISING-BUT-ROUGH.** The SDK's protocol engine is genuinely good — a real
-consumer harness hit 43/43 on the first battery-correct pass and the loop is a
+consumer harness hit 44/44 on the first battery-correct pass and the loop is a
 pleasure to drive. But "install and go" is currently fiction: two P0s block the
 documented path, and the flagship non-echo example crashes. Fix DF-001 + DF-002
 and this is shippable.
