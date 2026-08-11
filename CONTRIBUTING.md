@@ -11,6 +11,8 @@ source .venv/bin/activate
 uv pip install -e ".[dev]"
 ```
 
+Or use the Makefile: `make install` creates the venv and installs dev deps.
+
 ## Package Structure
 
 ```
@@ -18,16 +20,25 @@ sdk-python/
 ├── src/h3_harness/
 │   ├── protocol.py    # Pydantic models (generated from protocol repo JSON Schema)
 │   ├── harness.py     # BaseHarness ABC + FastAPI router
-│   ├── middleware.py   # Request logging middleware
-│   └── testbed.py     # MockHermes for pytest
+│   ├── middleware.py  # Request logging middleware
+│   ├── testbed.py     # MockHermes for pytest
+│   └── examples/
+│       ├── echo.py            # Echo harness (battery-ready template)
+│       ├── minimal.py         # Bare-minimum example
+│       └── langchain_agent.py # LangChain integration demo
 ├── tests/
 │   ├── test_protocol.py
 │   ├── test_harness.py
-│   └── test_testbed.py
-└── examples/
-    ├── echo/          # Echo harness (returns messages back)
-    ├── minimal/       # Bare-minimum example
-    └── langchain/     # LangChain integration demo
+│   ├── test_middleware.py
+│   ├── test_testbed.py
+│   ├── test_schema_validation.py
+│   ├── test_quickstart.py
+│   ├── test_example_langchain.py
+│   └── test_benchmarks.py
+├── scripts/
+│   ├── generate-protocol.py   # Regenerates protocol.py from get-h3/protocol schemas
+│   └── serve_echo.py          # Serve the echo example for the test battery
+└── Makefile
 ```
 
 ## Before Making Changes
@@ -35,34 +46,37 @@ sdk-python/
 ### Run Tests
 
 ```bash
-python -m pytest tests/ -v
-# 34 tests
+make test          # uv run pytest -x --tb=short -q
+# 128 tests
 ```
 
-### Run Lint + Type Check
+### Run Lint + Format Check
 
 ```bash
-ruff check src/ tests/
-mypy src/
+make lint          # uv run ruff check src/ tests/
+make fmt           # uv run ruff format src/ tests/
 ```
 
 ### Run the Test Battery
 
 ```bash
+# Install the shim (not yet published to PyPI — install from source):
+pip install git+https://github.com/get-h3/shim
+
 # Start the echo example in one terminal:
-python examples/echo/main.py
+uv run python src/h3_harness/examples/echo.py
 
 # In another terminal, run the compliance test battery:
 h3-test --endpoint http://localhost:9191
-# 43 compliance tests, exit code 0 = compliant
+# 44 compliance tests, exit code 0 = compliant
 ```
 
-### Sync Protocol Types
+### Regenerate Protocol Types
 
 If the upstream protocol changed:
 
 ```bash
-python scripts/sync_protocol.py
+make generate      # uv run python scripts/generate-protocol.py + ruff fix/format
 ```
 
 This regenerates `src/h3_harness/protocol.py` from `get-h3/protocol` schemas. Never hand-edit generated Pydantic models.
@@ -92,43 +106,50 @@ This regenerates `src/h3_harness/protocol.py` from `get-h3/protocol` schemas. Ne
 - Validation must match JSON Schema constraints from `get-h3/protocol/schemas/v1/`
 - `model_dump(exclude_none=True)` for wire format compatibility
 
+### Echo Example (Battery Conventions)
+
+`src/h3_harness/examples/echo.py` is the battery-ready template (44/44 compliant).
+If you modify it, keep the conventions intact — a naive harness that drops them
+scores 41/44: echo `context.history` in every Decision, never issue `llm_call`
+when `context.models` is empty, return `text.finished=false` for "do not finish"
+prompts, and 404 unknown sessions.
+
 ## Quality Gates
 
 ### Pre-Commit
 
 ```bash
-ruff check src/ tests/      # Lint
-ruff format --check src/ tests/  # Format
-mypy src/                   # Type check
-python -m pytest tests/ -v  # Tests (34)
+make lint          # uv run ruff check src/ tests/
+make fmt           # uv run ruff format src/ tests/ (then re-check)
+make test          # uv run pytest -x --tb=short -q (128 tests)
 ```
 
 ### CI Pipeline
 
 GitHub Actions runs on every PR:
 1. Lint (ruff)
-2. Type check (mypy)
-3. Tests (pytest, 34 tests)
-4. `h3-test --endpoint http://localhost:9191` (against echo example)
+2. Tests (pytest, 128 tests)
+3. `h3-test --endpoint http://localhost:9191` (against echo example — 44/44 battery)
 
 All must pass.
 
 ## Release
 
 ```bash
-git tag v1.0.0
-git push origin v1.0.0
+git tag v0.1.2
+git push origin v0.1.2
 # CI publishes to PyPI automatically
 ```
 
+Current published version: `0.1.2` (`h3-harness-sdk` on PyPI).
+
 ## Review Checklist
 
-- [ ] `pytest tests/ -v` passes (34 tests)
-- [ ] `ruff check` passes
-- [ ] `mypy src/` passes
-- [ ] `h3-test --endpoint http://localhost:9191` passes against echo example
+- [ ] `make test` passes (128 tests)
+- [ ] `make lint` passes
+- [ ] `h3-test --endpoint http://localhost:9191` passes against echo example (44/44)
 - [ ] New Pydantic fields use `Optional` where appropriate
-- [ ] Protocol changes regenerated via `sync_protocol.py`
+- [ ] Protocol changes regenerated via `make generate`
 - [ ] No hand-edits to generated types
 
 ## Questions?

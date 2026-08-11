@@ -9,7 +9,7 @@ For questions, bug reports, or feature requests related to the H3 Python SDK:
 ## Quick Links
 
 - **Package:** `pip install h3-harness-sdk`
-- **Examples:** [examples/echo/](https://github.com/get-h3/sdk-python/tree/main/examples/echo)
+- **Examples:** [echo.py](https://github.com/get-h3/sdk-python/tree/main/src/h3_harness/examples/echo.py) (battery-ready template) — plus [minimal.py](https://github.com/get-h3/sdk-python/tree/main/src/h3_harness/examples/minimal.py) and [langchain_agent.py](https://github.com/get-h3/sdk-python/tree/main/src/h3_harness/examples/langchain_agent.py), all under `src/h3_harness/examples/`
 
 ## Community
 
