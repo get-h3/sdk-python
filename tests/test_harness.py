@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from datetime import datetime
 
 import pytest
@@ -86,6 +87,30 @@ class SessionTrackingHarness(BaseHarness):
         return self._sessions.get(session_id)
 
 
+class QuickstartHarness(BaseHarness):
+    """GAP-025 regression: mirrors the README quickstart pattern.
+
+    ``__init__`` deliberately omits ``super().__init__()``, so ``_started_at``
+    stays at the class default (0.0) unless health() lazy-inits it.
+    """
+
+    def __init__(self) -> None:
+        # NOTE: no super().__init__() call — this is the bug being tested.
+        pass
+
+    async def on_process(self, req):
+        return Decision(
+            decision=DecisionType.TEXT,
+            text=TextResponse(content=f"Echo: {req.message.content}", finished=True),
+        )
+
+    async def on_result(self, req):
+        return Decision(
+            decision=DecisionType.END,
+            end=End(reason=EndReason.TASK_COMPLETE.value),
+        )
+
+
 @pytest.fixture()
 def app_tracking():
     a = FastAPI()
@@ -140,6 +165,23 @@ def test_health(client):
     assert body["status"] == "ok"
     assert "version" in body
     assert body["transport"] == "rest"
+
+
+def test_health_uptime_sane_without_super_init():
+    """GAP-025: quickstart harnesses (no super().__init__()) must not report
+    uptime as a Unix epoch — lazy-init makes it sane and growing."""
+    harness = QuickstartHarness()
+    assert harness._started_at == 0.0  # the buggy precondition
+
+    first = harness.health()
+    assert first.uptime_seconds is not None
+    assert 0 <= first.uptime_seconds < 86400
+
+    time.sleep(1)
+    second = harness.health()
+    assert second.uptime_seconds is not None
+    assert 0 <= second.uptime_seconds < 86400
+    assert second.uptime_seconds >= first.uptime_seconds
 
 
 # ── POST /v1/process ────────────────────────────────────────────────

@@ -91,6 +91,11 @@ class BaseHarness(ABC):
 
     def health(self) -> HealthResponse:
         """Return harness health status. Override for custom health logic."""
+        # GAP-025: quickstart subclasses may never call super().__init__(), so
+        # _started_at stays at the class default (0.0) and uptime would be a
+        # Unix epoch. Lazy-init on first health() call keeps uptime sane.
+        if self._started_at <= 0:
+            self._started_at = time.time()
         return HealthResponse(
             status=HealthStatus.OK,
             version="1.0.0",
