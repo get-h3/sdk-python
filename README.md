@@ -80,13 +80,22 @@ app.include_router(create_router(MyHarness()))
 
 ## Testbed
 
+<!-- Runnable as a plain script: save this block to a file and run `python file.py` -->
 ```python
+import asyncio
+
 from h3_harness.testbed import MockHermes
 from h3_harness.examples.echo import EchoHarness
 
-mock = MockHermes(EchoHarness())
-decision = await mock.send_message("Hello!")
-assert decision.text.content == "Echo: Hello!"
+
+async def main() -> None:
+    mock = MockHermes(EchoHarness())
+    decision = await mock.send_message("Hello!")
+    assert decision.text.content == "Echo: Hello!"
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
 ## Examples
