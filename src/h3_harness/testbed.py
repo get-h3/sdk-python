@@ -22,6 +22,7 @@ from .protocol import (
     Decision,
     Identity,
     Message,
+    Model,
     ProcessRequest,
     ResultPayload,
     ResultRequest,
@@ -54,11 +55,16 @@ def _default_session_state() -> SessionState:
     return SessionState(started_at=_now_iso())
 
 
-def _default_context() -> Context:
-    """Minimal valid Context with config and session_state."""
+def _default_context(models: list[Model] | None = None) -> Context:
+    """Minimal valid Context with config and session_state.
+
+    models defaults to an empty list (matching the battery's no-models
+    context — see README convention #2).
+    """
     return Context(
         config=_default_config(),
         session_state=_default_session_state(),
+        models=models or [],
     )
 
 
@@ -77,13 +83,18 @@ class MockHermes:
         content: str,
         *,
         session_id: str = "test-session",
+        models: list[Model] | None = None,
     ) -> Decision:
-        """Send a user message to the harness → return its Decision."""
+        """Send a user message to the harness → return its Decision.
+
+        models: optional list of models to expose in the context. Defaults to
+        an empty list, preserving the battery's no-models default.
+        """
         req = ProcessRequest(
             session_id=session_id,
             message=Message(content=content, timestamp=_now_iso()),
             identity=_default_identity(),
-            context=_default_context(),
+            context=_default_context(models=models),
         )
         return await self.harness.on_process(req)
 
