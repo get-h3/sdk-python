@@ -6,8 +6,8 @@ compliant). This runner serves the canonical 44/44 template
 (``h3_harness.examples.echo.EchoHarness``) on the battery port so CI and
 local developers can verify compliance without touching the example:
 ``echo.py`` builds its app only inside ``if __name__ == "__main__":`` and
-binds 0.0.0.0:8000, which ``uvicorn h3_harness.examples.echo:...`` cannot
-serve directly (EchoHarness is a harness class, not a FastAPI app).
+binds 0.0.0.0:9191 by default, which ``uvicorn h3_harness.examples.echo:...``
+cannot serve directly (EchoHarness is a harness class, not a FastAPI app).
 """
 
 import uvicorn

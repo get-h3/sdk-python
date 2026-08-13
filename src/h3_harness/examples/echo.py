@@ -10,11 +10,15 @@ Demonstrates:
 
 Run:
     python src/h3_harness/examples/echo.py
-    # → Server at http://0.0.0.0:8000
+    # → Server at http://0.0.0.0:9191
     #   GET  /v1/health  → harness health
     #   POST /v1/process → send a message, get it echoed back
+    #
+    # The port defaults to the battery port 9191; pass a number to override
+    # (e.g. python echo.py 8000).
 """
 
+import sys
 from datetime import datetime, timezone
 
 from fastapi import FastAPI
@@ -80,6 +84,17 @@ class EchoHarness(BaseHarness):
         return self._sessions.get(session_id)
 
 
+def _server_port(argv=None) -> int:
+    """Return the HTTP port for the echo server.
+
+    Defaults to the battery port 9191 (h3-test --endpoint
+    http://localhost:9191); an explicit argument overrides it, e.g.
+    ``python echo.py 8000``. When ``argv`` is None, ``sys.argv[1:]`` is used.
+    """
+    args = sys.argv[1:] if argv is None else argv
+    return int(args[0]) if args else 9191
+
+
 # ── Run ────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     import uvicorn
@@ -87,4 +102,4 @@ if __name__ == "__main__":
     app = FastAPI()
     app.include_router(create_router(EchoHarness()))
     add_middleware(app)
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=_server_port())
