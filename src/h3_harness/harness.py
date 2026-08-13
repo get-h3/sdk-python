@@ -27,6 +27,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 
+from ._version import __version__
 from .protocol import (
     CancelRequest,
     Capability,
@@ -98,7 +99,7 @@ class BaseHarness(ABC):
             self._started_at = time.time()
         return HealthResponse(
             status=HealthStatus.OK,
-            version="1.0.0",
+            version=__version__,
             transport="rest",
             protocol_version="1.0",
             uptime_seconds=int(time.time() - self._started_at),

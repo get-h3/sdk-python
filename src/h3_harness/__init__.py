@@ -1,7 +1,6 @@
 """H3 Harness SDK for Python — build agent harnesses compatible with Hermes Core."""
 
-__version__ = "0.1.2"
-
+from ._version import __version__
 from .harness import BaseHarness, create_router
 from .middleware import add_middleware
 from .protocol import (
@@ -29,6 +28,7 @@ from .protocol import (
 )
 
 __all__ = [
+    "__version__",
     "BaseHarness",
     "create_router",
     "add_middleware",

@@ -9,7 +9,13 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from h3_harness import BaseHarness, Decision, DecisionType, create_router
+from h3_harness import (
+    BaseHarness,
+    Decision,
+    DecisionType,
+    __version__,
+    create_router,
+)
 from h3_harness.protocol import (
     CancelReason,
     End,
@@ -165,6 +171,14 @@ def test_health(client):
     assert body["status"] == "ok"
     assert "version" in body
     assert body["transport"] == "rest"
+
+
+def test_health_version_matches_package_version(client):
+    """GAP-029: /v1/health must report the installed package version, not a
+    hardcoded string (1.0.0 never existed on PyPI — 0.1.0→0.1.2 did)."""
+    r = client.get("/v1/health")
+    assert r.status_code == 200
+    assert r.json()["version"] == __version__
 
 
 def test_health_uptime_sane_without_super_init():
