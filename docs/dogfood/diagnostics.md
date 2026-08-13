@@ -110,3 +110,65 @@ the breakage; replacing `_*.py` with `/_*.py` fixed it.
 4. Board storage is JSONL-canonical (JSONL-NORM-001): `tasks.jsonl` +
    `events.jsonl` are the git-tracked store; `board.db`/`*.parquet` are
    untracked rebuildable caches — never commit them.
+
+## 6. The release-pipeline drift (2026-08-13 dogfood) — how it happened
+
+**The symptom:** a fresh `pip install h3-harness-sdk` (PyPI 0.1.2, published
+2026-08-08) behaves like the repo looked ~2 weeks ago. Four board-✅ fixes are
+missing from the artifact users actually install:
+
+| Fix (board-✅) | Repo | Published 0.1.2 wheel |
+|---|---|---|
+| GAP-019 DELETE unknown session → 404 | ✅ | ❌ returns 200 `{"terminated":true}` |
+| GAP-025 health uptime lazy-init | ✅ | ❌ epoch uptime (~1.78e9) for quickstart harnesses |
+| GAP-029 health version = `__version__` | ✅ | ❌ hardcoded `"1.0.0"` |
+| MockHermes `send_message(models=...)` | ✅ | ❌ TypeError (docstring documents the kwarg!) |
+
+**Why:** the SDK's "done" definition is *repo state* (tests green, guard PASS,
+board complete). Nothing ties "done" to *shipped state*. Fixes landed ticks
+#106 (GAP-019) → #134 (GAP-029) after the 08-08 publish; there is no release
+task, no version bump, and no CI check that compares the published PyPI
+version to the repo version. The foreman's idle audits check tests/docs, not
+PyPI. The board's green is thus repo-relative — the classic premature-
+completion pattern moved to the release boundary.
+
+**The right way (per GAP-032):**
+1. Publish 0.1.3 with repo-HEAD `harness.py`/`testbed.py` (and re-verify with
+   the four probes in GAP-032's PASS criteria — they're all cheap curls).
+2. Add a release-readiness gate: CI job that queries PyPI JSON
+   (`https://pypi.org/pypi/h3-harness-sdk/json`) and fails when the published
+   version < repo `_version.py` AND there are merged fixes since the last
+   publish — or simpler: a standing "release pending" board task that must
+   close before new fix tasks land.
+3. When a fix touches `harness.py`/`testbed.py`/`protocol.py` (anything a
+   user imports), the foreman should check whether the last publish predates
+   the fix — if yes, release. That's a 1-line check: compare commit date of
+   the last PyPI upload vs the fix commit.
+
+**Other lessons from this run:**
+
+- **ResultRequest has no `context`** (protocol.py: decision_id/result/
+  session_id only). The README's "echo context.history in every Decision"
+  (convention #1) is therefore only satisfiable in `on_process`. The
+  convention text predates ResultRequest's final shape; docs should say
+  "every Decision returned from on_process". This is why the 08-03
+  integration report's TodoBrain and this run's ConvertBrain both had to
+  read source before getting on_result right.
+- **Exceptions in handlers are caught by the router and returned as HTTP 200**
+  with `{"decision":"end","reason":"error","summary":<exc>}`. This is the
+  current contract (not a bug per se — the shim loop reads the summary) but
+  it is undocumented, and the battery has no test that pins it down.
+  `logger.exception` output goes to stderr only if logging is configured.
+- **The battery is genuinely good at catching harness bugs**: my 43/44 first
+  run was a real convention mistake the battery named precisely
+  (`process_text_finished_false`). Respect it; it is the fastest feedback
+  loop this repo has.
+- **`tool_calls` arrives as a list** (OpenAI style) — the shipped examples
+  only demonstrate single-dict decisions; a real harness needs the
+  list-vs-dict guard (GAP-034 adjacent, worth an example update).
+- Session lifecycle on the wire: `SessionResponse.status` is hardcoded
+  `"active"` by the router even after END (GAP-035) — cosmetic today.
+
+**Verification history:** 2026-08-03 run → DF-001..005 (install broken).
+2026-08-13 run → GAP-032..035 (install fixed, wheel stale). Repo gates at
+time of run: 138/138 pytest (4.6s), ruff clean, CI 6/6, board 40/40 complete.

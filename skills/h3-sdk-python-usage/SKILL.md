@@ -5,7 +5,7 @@ description: >-
   harnesses that Hermes Core can use as a brain. Install path, quickstart,
   the 3 battery conventions, pitfalls. Load this before touching this repo or
   building a harness with h3-harness-sdk.
-version: 1.0.2
+version: 1.0.3
 category: software-development
 ---
 
@@ -24,12 +24,20 @@ to over HTTP. Compliance is enforced by the official test battery
 
 ## Install
 
-**Last verified: 2026-08-09** (PyPI 0.1.2 live since 2026-08-08; wheel `__init__.py`
-fix DF-001 and langchain example fix DF-003 confirmed in-tree).
+**Last verified: 2026-08-13** (dogfood run: fresh venv `pip install h3-harness-sdk`
+→ 0.1.2, import OK, 44/44 battery PASS with a from-scratch harness).
 
 1. **✅ `pip install h3-harness-sdk`** — the package IS published on PyPI
    (0.1.2). This is the primary install path.
-2. **From-source fallback** (pre-release / want repo HEAD):
+2. **⚠️ PyPI 0.1.2 is STALE vs repo HEAD (GAP-032, 2026-08-13 dogfood):**
+   the published wheel predates GAP-019 (DELETE unknown session → 200, not 404),
+   GAP-025 (verbatim README quickstart health `uptime_seconds` = Unix epoch),
+   GAP-029 (health `version` hardcoded "1.0.0"), and MockHermes
+   `send_message(models=...)` (TypeError). All fixed in repo; NOT shipped.
+   Until 0.1.3 lands, use the from-source path below if you need those fixes
+   (or for fresh dogfood runs: the published wheel is the honest user
+   experience — test BOTH).
+3. **From-source fallback** (pre-release / want repo HEAD):
    ```bash
    pip install git+https://github.com/get-h3/sdk-python
    # or editable for development:
@@ -88,11 +96,16 @@ GET/DELETE /v1/sessions/{id}, POST /v1/cancel, GET /v1/health
 ## The 3 battery conventions (undocumented in README — REQUIRED for 44/44)
 
 1. **Echo history:** include `history=list(req.context.history)` in every
-   Decision you return (test: `process_preserves_history`).
+   Decision returned from **`on_process`** (test: `process_preserves_history`).
+   ⚠️ **`on_result` has NO context** — `ResultRequest` carries only
+   `decision_id`/`result`/`session_id`; do NOT reference `req.context` there
+   (GAP-033; a doc-following user crashes on first /v1/result).
 2. **Models guard:** only return `LLM_CALL` when `req.context.models` is
    non-empty; use `models[0].name` (test: `no_models_available`).
 3. **Streaming flag:** if the message contains "do not finish", return
    `TextResponse(..., finished=False)` (test: `process_text_finished_false`).
+   Apply it in EVERY TEXT branch, including the empty-models fallback —
+   the battery caught a harness that missed it there (2026-08-13 run).
 
 The shipped `src/h3_harness/examples/echo.py` implements all three — treat it
 as the reference implementation. A from-scratch harness following these scored
@@ -124,13 +137,22 @@ h3-test --endpoint http://127.0.0.1:9191        # 44/44 + exit 0 = compliant
   the wheel. After packaging changes, build a wheel and inspect it
   (`pip wheel --no-deps . && unzip -l dist/*.whl`) — it MUST contain
   `h3_harness/__init__.py`.
+- **Don't** assume repo-HEAD behavior is what users get: the published PyPI
+  wheel can lag the repo (GAP-032 — four fixes missing from 0.1.2). When a
+  fix touches `harness.py`/`testbed.py`/`protocol.py`, check whether the last
+  PyPI upload predates it; if so, a release is pending.
+- **Do** handle `tool_calls` as a LIST (OpenAI style) — real LLM responses
+  wrap tool calls in arrays; the shipped examples only show single dicts.
+- **Do** expect handler exceptions to surface as HTTP 200
+  `{"decision":"end","reason":"error","summary":...}` (GAP-034) — check
+  `summary` and server logs when a session ends unexpectedly.
 - **Do** use `src/h3_harness/examples/langchain_agent.py` as a LangChain
   integration reference — the dict-access bugs (DF-003) are fixed.
 - **Don't** PUT scheduler cooldown for this project — fleet.toml pins it.
 - **Do** keep `.coding-hermes/tasks.md` present in v2.1 `|||` format
   (GitReins `validate-board-format.py` requires it); the live board is
-  JSONL-canonical — `.coding-hermes/board/{events,tasks,fixtures}.jsonl`
-  are tracked and authoritative; `board.db` and `*.parquet` are local caches
-  (JSONL-NORM-001, Bane 2026-08-07 directive).
+  JSONL-canonical — **new tasks go in `.coding-hermes/board/tasks.jsonl`**
+  (the foreman reads that, not tasks.md); tasks.md mirrors active rows.
+  `board.db` and `*.parquet` are local caches (JSONL-NORM-001).
 - **Do** check `docs/dogfood/diagnostics.md` before debugging packaging or
   battery failures — the root causes are already recorded there.

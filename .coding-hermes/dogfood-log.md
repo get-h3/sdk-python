@@ -34,3 +34,44 @@ documented path: FAILED (never succeeds).
 
 **Evidence:** `/tmp/dogfood-h3-sdk/` (consumer project, TodoBrain v3, battery JSONs).
 Full report: `docs/dogfood/2026-08-03-integration.md`, `docs/dogfood/diagnostics.md`.
+
+---
+
+## 2026-08-13 — 🟡 PROMISING-BUT-ROUGH (core promise holds; published wheel stale)
+
+**Verdict:** 🟡 PROMISING-BUT-ROUGH — install works, full loop works, 44/44 battery
+from a from-scratch harness, but the PyPI artifact users actually install is 2-3
+weeks behind repo HEAD: four board-✅ fixes are live-missing on 0.1.2.
+
+**Promise statement:** "A Python developer can `pip install h3-harness-sdk`
+(PyPI 0.1.2), subclass `BaseHarness`, mount `create_router()` on FastAPI, run
+uvicorn, and ship an H3-compliant harness that passes the 44-test h3-test battery."
+
+**Reality:** Holds end-to-end — fresh-venv PyPI install OK (0.1.2), ConvertBrain
+(from-scratch tool-calling harness: process→llm_call→tool_call→text→end) passed
+44/44 h3-test exit 0, MockHermes loop PASS, README quickstart + testbed snippets
+runnable verbatim. BUT the published wheel is stale: GAP-019 (DELETE unknown
+session 404), GAP-025 (uptime epoch), GAP-029 (health version), MockHermes
+`models=` kwarg are all fixed in repo and MISSING on PyPI 0.1.2 (GAP-032).
+README convention #1 (echo history "in every Decision") is impossible in
+on_result (ResultRequest has no context — GAP-033). Handler exceptions are
+masked as HTTP 200 end/error (GAP-034).
+
+**Top 3 findings:**
+1. P1 — PyPI 0.1.2 wheel stale vs repo HEAD; 4 shipped fixes live-missing;
+   verbatim README quickstart shows epoch uptime on the published package. (GAP-032)
+2. P2 — "Echo context.history in every Decision" impossible in on_result;
+   doc-following user crashes on first /v1/result. (GAP-033)
+3. P2 — Handler exceptions silently masked as HTTP 200 end/error. (GAP-034)
+
+**Time-to-first-success:** ~2 min (pip install 30s + import + uvicorn up). Full
+loop incl. battery: ~15 min.
+
+**Friction count:** 5 (ResultRequest no-context crash [GAP-033], 200-masked
+exceptions ×2 [GAP-034], tool_calls-list handling undocumented, MockHermes
+models kwarg TypeError on 0.1.2 [GAP-032d], DELETE-unknown 200 vs cancel/GET 404
+[GAP-032a]).
+
+**Evidence:** `/tmp/dogfood-h3sdk-0813/` (consumer project: convert_brain.py,
+drive_loop.py, battery JSON). Full report:
+`docs/dogfood/2026-08-13-integration.md`, `docs/dogfood/diagnostics.md` §6.
