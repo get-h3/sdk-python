@@ -4,7 +4,7 @@
 (dogfood run 2026-08-03 + project history), and the right way to do things.
 Not raw logs — explained lessons.
 
-**Last verified:** 2026-08-10 (GAP-021 sync: battery 44/44, JSONL board)
+**Last verified:** 2026-08-13 (tick #134, GAP-030: 44/44 battery target current; audit-2026-08.md marked superseded)
 
 ## 1. How the SDK is built
 
