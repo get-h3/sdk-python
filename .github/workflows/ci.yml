@@ -116,3 +116,53 @@ jobs:
           set -o pipefail
           h3-test --endpoint http://localhost:9191 | tee battery.log
           grep -q "44/44" battery.log
+
+  # GAP-032: release-readiness gate — the published PyPI wheel must not lag
+  # the repo version. GAP-019/025/029 fixes were complete on main for days
+  # while the published 0.1.2 wheel stayed stale, so package consumers never
+  # received them. This job fetches the latest published version from PyPI
+  # and fails when it is OLDER than the version declared in pyproject.toml:
+  # new fixes must not land on main while the wheel that ships them is
+  # unpublished. Publishing (`make build && uv publish`) makes the gate pass
+  # on the next push. Hard gate on push to main; on PRs it runs as
+  # informational context (same comparison, non-blocking).
+  release-readiness:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Fetch published version from PyPI
+        id: pypi
+        run: |
+          curl -sf https://pypi.org/pypi/h3-harness-sdk/json -o /tmp/pypi.json
+          python -c "import json; print(json.load(open('/tmp/pypi.json'))['info']['version'])" > /tmp/published.txt
+          echo "published=$(cat /tmp/published.txt)" >> "$GITHUB_OUTPUT"
+
+      - name: Compare repo version vs published (fail if PyPI lags)
+        run: |
+          REPO_VERSION=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          PUBLISHED_VERSION="${{ steps.pypi.outputs.published }}"
+          echo "repo version:      ${REPO_VERSION}"
+          echo "published version: ${PUBLISHED_VERSION}"
+          python - "$REPO_VERSION" "$PUBLISHED_VERSION" <<'EOF'
+          import re, sys
+
+          def parse(v: str) -> tuple:
+              return tuple(int(x) for x in re.findall(r"\d+", v))
+
+          repo, published = parse(sys.argv[1]), parse(sys.argv[2])
+          if published < repo:
+              print(
+                  f"FAIL: PyPI has {sys.argv[2]} but repo is {sys.argv[1]} — "
+                  "fixes are landing without a published wheel. "
+                  "Run: make build && uv publish"
+              )
+              sys.exit(1)
+          print("OK: published wheel is current (or ahead of repo)")
+          EOF

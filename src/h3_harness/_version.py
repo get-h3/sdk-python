@@ -6,4 +6,4 @@ Deliberately imports nothing, so either importer can use it without an
 import cycle.
 """
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
