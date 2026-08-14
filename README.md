@@ -152,6 +152,34 @@ The canonical battery-ready template is **[echo.py](src/h3_harness/examples/echo
 — it implements all four conventions and scores 44/44. Use it as the starting
 point for your own harness.
 
+## Error handling
+
+Exceptions raised inside your harness's `on_process` / `on_result` are
+**caught by the router and masked as a successful HTTP 200** `end` decision:
+
+```json
+{"decision": "end", "end": {"reason": "error", "summary": "<exception text>"}}
+```
+
+This masking **is the current contract** — the spec
+(`get-h3/h3` → `specs/04-SDK-Libraries.md`) is silent on handler exceptions,
+and the behavior is locked in by `tests/test_handler_crash.py`. From the
+shim's point of view the session simply ends: it sees a normal `end` and
+stops, so **the session dies silently**. If you need to distinguish a crash
+from a real completion, validate the decision — the
+`end.reason == "error"` marker (and the server-side
+`on_process failed` / `on_result failed` log lines from
+`logger.exception`) is the only signal.
+
+Real HTTP 500s are reserved for **non-handler** failures and are not
+disturbed by the masking: exceptions from `on_cancel` /
+`on_session_terminate` surface as HTTP 500 (`{"detail": ...}`), and any
+exception that escapes the router entirely is caught by the logging
+middleware's catch-all, which returns an `ErrorResponse` with
+`ErrorCode.INTERNAL_ERROR`. Handler-crash coverage in the shim battery
+(`get-h3/shim` → `test_battery.py`) belongs to that repo — it is out of
+scope for this SDK.
+
 ## Development
 
 ```bash
