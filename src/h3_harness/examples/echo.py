@@ -5,6 +5,7 @@ Demonstrates:
   - TextResponse, Decision, End
   - create_router + add_middleware
   - Session tracking via get_session_info (H3 compliance)
+  - Session status reporting: "active" → "completed" once on_result ends it
   - Streaming detection via content heuristics
   - uvicorn runner
 
@@ -27,6 +28,8 @@ from h3_harness import (
     BaseHarness,
     Decision,
     DecisionType,
+    End,
+    EndReason,
     TextResponse,
     add_middleware,
     create_router,
@@ -53,6 +56,9 @@ class EchoHarness(BaseHarness):
         self._sessions[sid] = {
             "started_at": datetime.now(timezone.utc).isoformat(),
             "turn_count": self._sessions.get(sid, {}).get("turn_count", 0) + 1,
+            # GAP-035: sessions start active; on_result flips them to
+            # "completed" when it returns an END decision.
+            "status": "active",
         }
 
         # Echo conversation history from context
@@ -73,10 +79,24 @@ class EchoHarness(BaseHarness):
             entry = self._sessions[sid]
             entry["turn_count"] = entry.get("turn_count", 0) + 1
 
-        result_content = f"Result received: {req.decision_id}"
+        if finished:
+            # The exchange is complete — end the session and record it as
+            # completed (GAP-035: GET /v1/sessions/{id} then reports
+            # status="completed"). Streaming sessions ("do not finish")
+            # keep returning unfinished text and stay active.
+            if sid in self._sessions:
+                self._sessions[sid]["status"] = "completed"
+            return Decision(
+                decision=DecisionType.END,
+                end=End(reason=EndReason.TASK_COMPLETE),
+            )
+
         return Decision(
             decision=DecisionType.TEXT,
-            text=TextResponse(content=result_content, finished=finished),
+            text=TextResponse(
+                content=f"Result received: {req.decision_id}",
+                finished=finished,
+            ),
         )
 
     def get_session_info(self, session_id: str) -> dict | None:

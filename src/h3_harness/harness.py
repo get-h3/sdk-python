@@ -134,6 +134,22 @@ def _iso_timestamp(value: object) -> str:
     return str(value)
 
 
+def _session_status(value: object) -> SessionStatus:
+    """Resolve a harness-provided status value to a SessionStatus.
+
+    GAP-035: ``get_session_info`` may carry a ``status`` key (values matching
+    SessionStatus, e.g. "active"/"completed"). Unknown or invalid values fall
+    back to ACTIVE — the pre-GAP-035 contract and the safe default for
+    harnesses that don't track status at all.
+    """
+    if isinstance(value, str):
+        try:
+            return SessionStatus(value)
+        except ValueError:
+            pass
+    return SessionStatus.ACTIVE
+
+
 def create_router(harness: BaseHarness, *, prefix: str = "") -> APIRouter:
     """Create a FastAPI router wired to the given harness.
 
@@ -217,7 +233,7 @@ def create_router(harness: BaseHarness, *, prefix: str = "") -> APIRouter:
                 started_at=_iso_timestamp(info.get("started_at")),
                 last_active=_iso_timestamp(info.get("last_active")),
                 turn_count=info.get("turn_count", 0),
-                status=SessionStatus.ACTIVE,
+                status=_session_status(info.get("status")),
             )
         # Default: no session tracking — always return ACTIVE.
         return SessionResponse(
