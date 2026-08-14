@@ -180,6 +180,25 @@ middleware's catch-all, which returns an `ErrorResponse` with
 (`get-h3/shim` → `test_battery.py`) belongs to that repo — it is out of
 scope for this SDK.
 
+## Result payloads
+
+**`result["tool_calls"]` is a LIST.** When a result carries tool calls
+(OpenAI-style LLM APIs), `req.result["tool_calls"]` is a `list[dict]`, one
+entry per call — never a single dict:
+
+```python
+tool_calls = req.result.get("tool_calls") or []
+if not isinstance(tool_calls, list):
+    tool_calls = [tool_calls]  # defensive: accept a lone dict too
+for call in tool_calls:
+    print(call["name"])  # each entry is a plain dict
+```
+
+Dict-style access on the list (`req.result["tool_calls"].get("name")`)
+raises `AttributeError: 'list' object has no attribute 'get'` — which,
+under the error contract above, surfaces as a silent HTTP 200 `end/error`
+and kills the session with no signal.
+
 ## Development
 
 ```bash

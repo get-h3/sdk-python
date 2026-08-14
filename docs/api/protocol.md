@@ -315,6 +315,14 @@ Payload for a result returned to the harness (the canonical shape of the
 | `data` | `dict[str, Any] \| None` | `None` | Result data. |
 | `duration_ms` | `int \| None` | `None` | Execution duration; if set, must be ≥ 0 (pydantic `ge=0`). |
 
+> **`result["tool_calls"]` is a LIST** (OpenAI-style LLM APIs): when the
+> result carries tool calls, the value is a `list[dict]`, one entry per call
+> — never a single dict. Guard with an `isinstance(..., list)` check before
+> iterating; dict-style access on the list raises
+> `AttributeError: 'list' object has no attribute 'get'`, which the router
+> masks as a silent HTTP 200 `end/error` (see README → "Error handling").
+> README → "Result payloads" has a full sample.
+
 ---
 
 ## Common types
