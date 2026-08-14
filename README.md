@@ -199,6 +199,15 @@ raises `AttributeError: 'list' object has no attribute 'get'` — which,
 under the error contract above, surfaces as a silent HTTP 200 `end/error`
 and kills the session with no signal.
 
+`req.result` itself is a **plain dict** — read fields with `.get()`, never
+attribute style (`req.result.type` raises `AttributeError`). The canonical
+shape is `ResultPayload`; see `docs/api/protocol.md`.
+
+`GET /v1/sessions/{id}` reports session status: `"active"` (default) or
+`"completed"`. Harnesses that track lifecycle return a `status` key from
+`get_session_info` (`"completed"` once the loop reaches `end`) and the
+router passes it through.
+
 ## Development
 
 ```bash

@@ -82,21 +82,30 @@ the `ProcessRequest` directly (see `drive_loop.py` step 7) or install from git.
 
 ## What a new user needs that isn't documented
 
+> **All four gaps below are now documented or fixed (back-propagated
+> 2026-08-14, GAP-036/038)** — README → "Result payloads" / "Error
+> handling" and `docs/api/protocol.md`. Kept as a historical record.
+
 1. **`tool_calls` arrives as a LIST** (OpenAI-style) — the examples only show
    single-dict tool_call decisions. One `isinstance(tool, list)` guard saves a
-   debug cycle. (Candidate for examples/ + README.)
+   debug cycle. → **Resolved (GAP-036)**: README "Result payloads" sample +
+   `docs/api/protocol.md` ResultPayload note.
 2. **Exceptions are masked as HTTP 200** `{"decision":"end","reason":"error",
    "summary":...}` — if a session ends unexpectedly, read `summary`; enable
-   logging to see `logger.exception` output. Not documented anywhere.
+   logging to see `logger.exception` output. → **Resolved (GAP-034)**: README
+   "Error handling" documents the end/error-200 contract.
 3. **`req.result` is a plain dict** — `.get("type")`, never `.type` (this IS
    documented in the skill + langchain example, but not in the README).
+   → **Resolved (GAP-038)**: README "Result payloads".
 4. **Session status is always `"active"`** even after END (GAP-035).
+   → **Fixed in 0.1.3 (GAP-035)**: `get_session_info` status pass-through.
 
 ## Bottom line for an integrator
 
 The SDK is genuinely usable and the battery is a superb gate — you can build
 a real agent brain in an afternoon and prove compliance in ~1s. Two caveats:
-(a) install from **git** (`pip install git+https://github.com/get-h3/sdk-python`)
-until 0.1.3 ships, so you get the DELETE-404/uptime/version/MockHermes fixes;
+(a) install from **PyPI** (`pip install h3-harness-sdk`, 0.1.3+ — the stale
+0.1.2 wheel is fixed by the 0.1.3 release, which carries the
+DELETE-404/uptime/version/MockHermes fixes);
 (b) follow the battery conventions exactly, and don't echo history in
 `on_result` — it doesn't exist there.
