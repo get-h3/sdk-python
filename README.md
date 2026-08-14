@@ -121,13 +121,19 @@ battery-compliant (**44/44**). If you modify it, keep the conventions intact —
 a naive harness that drops them scores **41/44**. The four conventions the
 battery checks (beyond "return a Decision") are:
 
-1. **Echo `context.history` in every Decision.** The battery sends a session
-   with prior history and asserts it flows back through the response
-   (`test_2_8_process_preserves_history`). Pass it through explicitly:
+1. **Echo `context.history` in every Decision returned from `on_process`.**
+   The battery sends a session with prior history and asserts it flows back
+   through the response (`test_2_8_process_preserves_history`). Pass it
+   through explicitly:
    ```python
    history = list(req.context.history)
    return Decision(..., history=history)
    ```
+   This applies to decisions returned from `on_process` — the `ProcessRequest`
+   carries the `context` field. `on_result` receives a `ResultRequest`, which
+   has **no** `context` field (only `decision_id`/`result`/`session_id`); a
+   decision returned from `on_result` simply omits `history`. Echoing
+   `req.context.history` there raises `AttributeError`.
 2. **Never issue `llm_call` when `context.models` is empty.** The battery
    sends `context.models: []` and FAILS any harness that returns an `llm_call`
    decision (`test_5_8_no_models_available` — "hallucinated model"). Only

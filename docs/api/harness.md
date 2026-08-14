@@ -46,6 +46,10 @@ Called after Hermes executes a Decision (`POST /v1/result`). Return the next
 Decision. Return `Decision(decision=DecisionType.END, ...)` to finish the
 session.
 
+Note: `ResultRequest` carries only `decision_id`/`result`/`session_id` — there
+is **no** `context` field, so decisions returned from `on_result` must omit
+`history` (see README → convention #1).
+
 ### `on_cancel(req: CancelRequest) -> bool` — optional
 
 Called when the user interrupts (`POST /v1/cancel`). Return `True` to confirm
