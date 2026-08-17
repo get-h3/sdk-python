@@ -24,19 +24,18 @@ to over HTTP. Compliance is enforced by the official test battery
 
 ## Install
 
-**Last verified: 2026-08-13** (dogfood run: fresh venv `pip install h3-harness-sdk`
-→ 0.1.2, import OK, 44/44 battery PASS with a from-scratch harness).
+**Last verified: 2026-08-14** (dogfood run: fresh venv `pip install h3-harness-sdk`
+→ 0.1.3, import OK, 44/44 battery PASS with a from-scratch harness).
 
 1. **✅ `pip install h3-harness-sdk`** — the package IS published on PyPI
-   (0.1.2). This is the primary install path.
-2. **⚠️ PyPI 0.1.2 is STALE vs repo HEAD (GAP-032, 2026-08-13 dogfood):**
-   the published wheel predates GAP-019 (DELETE unknown session → 200, not 404),
-   GAP-025 (verbatim README quickstart health `uptime_seconds` = Unix epoch),
-   GAP-029 (health `version` hardcoded "1.0.0"), and MockHermes
-   `send_message(models=...)` (TypeError). All fixed in repo; NOT shipped.
-   Until 0.1.3 lands, use the from-source path below if you need those fixes
-   (or for fresh dogfood runs: the published wheel is the honest user
-   experience — test BOTH).
+   (0.1.3, released 2026-08-14 with the GAP-019/025/029 + MockHermes
+   `send_message(models=...)` fixes). This is the primary install path.
+2. **✅ Version drift is now CI-gated:** the `release-readiness` job (GAP-032)
+   fails when the published PyPI wheel lags the repo version, and the
+   `docs-version-sweep` job (GAP-040) fails when a living doc references an
+   older version. The old 0.1.2-stale state (GAP-032, 2026-08-13 dogfood) is
+   historical — if you hit a version mismatch now, check PyPI JSON
+   (`https://pypi.org/pypi/h3-harness-sdk/json`) before assuming staleness.
 3. **From-source fallback** (pre-release / want repo HEAD):
    ```bash
    pip install git+https://github.com/get-h3/sdk-python
@@ -138,7 +137,8 @@ h3-test --endpoint http://127.0.0.1:9191        # 44/44 + exit 0 = compliant
   (`pip wheel --no-deps . && unzip -l dist/*.whl`) — it MUST contain
   `h3_harness/__init__.py`.
 - **Don't** assume repo-HEAD behavior is what users get: the published PyPI
-  wheel can lag the repo (GAP-032 — four fixes missing from 0.1.2). When a
+  wheel can lag the repo (historical: GAP-032 — four fixes missing from
+  0.1.2; now caught by the `release-readiness` CI job). When a
   fix touches `harness.py`/`testbed.py`/`protocol.py`, check whether the last
   PyPI upload predates it; if so, a release is pending.
 - **Do** handle `tool_calls` as a LIST (OpenAI style) — real LLM responses

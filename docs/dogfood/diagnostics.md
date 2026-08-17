@@ -113,6 +113,13 @@ the breakage; replacing `_*.py` with `/_*.py` fixed it.
 
 ## 6. The release-pipeline drift (2026-08-13 dogfood) — how it happened
 
+> **SUPERSEDED (2026-08-14):** this section is a historical incident record.
+> `0.1.3` was published with all four fixes (GAP-019/025/029 +
+> MockHermes `send_message(models=...)`), and the CI `release-readiness`
+> job (GAP-032) now fails when the published PyPI wheel lags the repo
+> version. References to the PyPI `0.1.2` wheel below are intentionally
+> historical — do not treat them as the current published version.
+
 **The symptom:** a fresh `pip install h3-harness-sdk` (PyPI 0.1.2, published
 2026-08-08) behaves like the repo looked ~2 weeks ago. Four board-✅ fixes are
 missing from the artifact users actually install:
