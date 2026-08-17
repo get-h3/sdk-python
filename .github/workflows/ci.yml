@@ -166,3 +166,93 @@ jobs:
               sys.exit(1)
           print("OK: published wheel is current (or ahead of repo)")
           EOF
+
+  # GAP-040: docs-version-sweep gate — every release (0.1.1→0.1.2→0.1.3) has
+  # produced a new stale-version GAP row (GAP-014, GAP-016, GAP-037-adjacent,
+  # GAP-039) because no release checklist covered doc-version references.
+  # This job fails CI when a scoped LIVING doc line that asserts a version
+  # (contains "h3-harness-sdk", "h3_harness", "__version__", or
+  # "published version") references a version older than the package
+  # __version__ in src/h3_harness/_version.py — the single source of truth.
+  # Historical records are excluded by scope: CHANGELOG.md (release history
+  # is intentionally versioned) and docs/dogfood/** (dated incident records)
+  # are never scanned. Hard gate on push to main and on PRs.
+  docs-version-sweep:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Sweep living docs for stale version references
+        run: |
+          python - <<'EOF'
+          import glob, re, sys
+
+          # Single source of truth: src/h3_harness/_version.py. Fall back to
+          # pyproject.toml if the module file is ever moved.
+          version_file = "src/h3_harness/_version.py"
+          m = None
+          try:
+              m = re.search(r'__version__\s*=\s*["\']([^"\']+)["\']', open(version_file).read())
+          except FileNotFoundError:
+              m = None
+          if m is None:
+              import tomllib
+              m = re.search(r"\d+\.\d+\.\d+", tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])
+              current = tuple(int(x) for x in m.group(0).split("."))
+          else:
+              current = tuple(int(x) for x in m.group(1).split("."))
+          current_str = ".".join(str(x) for x in current)
+
+          # Living docs only. Historical records are excluded by scope:
+          # CHANGELOG.md (release history is intentionally versioned) and
+          # docs/dogfood/** (dated incident records) are never scanned.
+          files = sorted(glob.glob("docs/api/*.md")) + [
+              "README.md",
+              "CONTRIBUTING.md",
+              "skills/h3-sdk-python-usage/SKILL.md",
+          ]
+
+          KEYWORDS = (
+              "h3-harness-sdk",
+              "h3_harness",
+              "__version__",
+              "published version",
+              "Current published version",
+          )
+          VERSION_RE = re.compile(r"\b\d+\.\d+\.\d+\b")
+
+          violations = []
+          found_files = []
+          for path in files:
+              try:
+                  lines = open(path).read().splitlines()
+              except FileNotFoundError:
+                  continue
+              found_files.append(path)
+              for lineno, line in enumerate(lines, 1):
+                  if not any(k in line for k in KEYWORDS):
+                      continue
+                  versions = [tuple(int(x) for x in v.split(".")) for v in VERSION_RE.findall(line)]
+                  if not versions:
+                      continue
+                  stale = [v for v in versions if v < current]
+                  if stale:
+                      violations.append(f"{path}:{lineno}: {line}")
+
+          if violations:
+              print("\n".join(violations))
+              print(
+                  f"FAIL: docs reference stale version {current_str} — "
+                  f"bump to {current_str} or mark the doc historical "
+                  "(SUPERSEDED banner / date)"
+              )
+              sys.exit(1)
+          print(f"OK: {len(found_files)} living docs reference only version {current_str}")
+          EOF
+
