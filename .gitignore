@@ -21,6 +21,7 @@ build/
 /_*.py
 # GitReins verdict history (local)
 .gitreins/history/
+.gitreins/usage.jsonl
 
 # pytest-benchmark cache (regenerated on every run)
 .benchmarks/
@@ -31,6 +32,16 @@ build/
 .coding-hermes/board/*.parquet
 
 .coding-hermes/board/*.duckdb
+
+# Local board header (untracked by design — JSONL-canonical board)
+.coding-hermes/board/board.jsonl
+
+# Local engine caches (rebuildable)
+/board.db
+/dagger.db*
+
+# Local DuckBrain namespace cache (test artifact, not SDK content)
+/namespaces/
 
 # Stale E2E ghost checkpoints (GAP-020, 2026-08-10) — battery results
 # live in CI logs / docs/dogfood/, never in repo output dirs
