@@ -218,6 +218,11 @@ make lint      # ruff check
 make fmt       # ruff format
 ```
 
+**Running tests:** use the project venv — `make install` then `.venv/bin/pytest`
+(145 tests). Bare `pytest` on an ambient interpreter may fail to import
+`h3_harness`; `pytest.ini`'s `pythonpath = src` covers collection from the
+source tree without an install, but the project venv is the supported path.
+
 ## Reference
 
 - Spec: [get-h3/h3 — specs/04-SDK-Libraries.md](https://github.com/get-h3/h3/blob/main/specs/04-SDK-Libraries.md)
