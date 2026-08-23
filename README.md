@@ -72,11 +72,35 @@ class MyHarness(BaseHarness):
     def get_session_info(self, session_id: str) -> dict | None:
         return self._sessions.get(session_id)
 
+    async def on_session_terminate(self, session_id: str) -> None:
+        # DELETE /v1/sessions/{id} -> forget the session so a later GET 404s.
+        self._sessions.pop(session_id, None)
+
 
 app = FastAPI()
 app.include_router(create_router(MyHarness()))
 # Run with: uvicorn my_harness:app --port 9191
 ```
+
+### Session lifecycle
+
+`DELETE /v1/sessions/{id}` invokes `on_session_terminate(session_id)` on the
+harness (unknown ids 404 at the router before the harness is involved). The
+base implementation is a **no-op**, so without an override a terminated
+session stays fully retrievable: the DELETE returns `{"terminated": true}`,
+but a later `GET /v1/sessions/{id}` still returns 200 with the full session.
+The fix is a 3-line cleanup — drop the session from your tracking dict,
+exactly as in the quickstart above:
+
+```python
+async def on_session_terminate(self, session_id: str) -> None:
+    # DELETE /v1/sessions/{id} -> forget the session so a later GET 404s.
+    self._sessions.pop(session_id, None)
+```
+
+Keep this override in any harness that tracks sessions — it keeps harness
+state consistent with what the wire promises (a terminated session 404s on
+later GET, like any unknown session).
 
 ## Testbed
 

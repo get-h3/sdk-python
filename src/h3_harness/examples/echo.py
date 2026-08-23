@@ -103,6 +103,10 @@ class EchoHarness(BaseHarness):
         """Return session info dict or None if not found. Used by create_router."""
         return self._sessions.get(session_id)
 
+    async def on_session_terminate(self, session_id: str) -> None:
+        # DELETE /v1/sessions/{id} -> forget the session so a later GET 404s.
+        self._sessions.pop(session_id, None)
+
 
 def _server_port(argv=None) -> int:
     """Return the HTTP port for the echo server.
