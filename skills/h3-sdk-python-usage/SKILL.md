@@ -5,7 +5,7 @@ description: >-
   harnesses that Hermes Core can use as a brain. Install path, quickstart,
   the 3 battery conventions, pitfalls. Load this before touching this repo or
   building a harness with h3-harness-sdk.
-version: 1.0.3
+version: 1.0.4
 category: software-development
 ---
 
@@ -24,18 +24,25 @@ to over HTTP. Compliance is enforced by the official test battery
 
 ## Install
 
-**Last verified: 2026-08-14** (dogfood run: fresh venv `pip install h3-harness-sdk`
-→ 0.1.3, import OK, 44/44 battery PASS with a from-scratch harness).
+**Last verified: 2026-08-23** (dogfood run: fresh venv `pip install h3-harness-sdk`
+→ 0.1.3, import OK, verbatim quickstart + testbed run, from-scratch harness
+44/44 battery PASS — BUT the 0.1.3 wheel is content-stale for GAP-035, see
+pitfalls).
 
 1. **✅ `pip install h3-harness-sdk`** — the package IS published on PyPI
-   (0.1.3, released 2026-08-14 with the GAP-019/025/029 + MockHermes
+   (0.1.3, released 2026-08-13 with the GAP-019/025/029 + MockHermes
    `send_message(models=...)` fixes). This is the primary install path.
-2. **✅ Version drift is now CI-gated:** the `release-readiness` job (GAP-032)
-   fails when the published PyPI wheel lags the repo version, and the
-   `docs-version-sweep` job (GAP-040) fails when a living doc references an
-   older version. The old 0.1.2-stale state (GAP-032, 2026-08-13 dogfood) is
-   historical — if you hit a version mismatch now, check PyPI JSON
-   (`https://pypi.org/pypi/h3-harness-sdk/json`) before assuming staleness.
+2. **⚠️ Version-number gates are NOT content gates:** the `release-readiness`
+   job (GAP-032) fails when the published PyPI *version* lags the repo
+   version, and `docs-version-sweep` (GAP-040) catches docs version drift —
+   but NEITHER catches a wheel that is content-stale at the SAME version
+   number. Proven 2026-08-23: published 0.1.3 lacks the GAP-035 status
+   pass-through (fix landed 3 min after the upload; never re-published) while
+   both gates stayed green (GAP-043). When a fix touches
+   `harness.py`/`testbed.py`/`protocol.py`, manually compare the last PyPI
+   upload time (`https://pypi.org/pypi/h3-harness-sdk/json`) against the fix
+   commit time — if the upload predates the fix, the wheel is stale. To diff
+   content: `diff src/h3_harness/harness.py <venv>/lib/python3.*/site-packages/h3_harness/harness.py`.
 3. **From-source fallback** (pre-release / want repo HEAD):
    ```bash
    pip install git+https://github.com/get-h3/sdk-python
@@ -137,10 +144,19 @@ h3-test --endpoint http://127.0.0.1:9191        # 44/44 + exit 0 = compliant
   (`pip wheel --no-deps . && unzip -l dist/*.whl`) — it MUST contain
   `h3_harness/__init__.py`.
 - **Don't** assume repo-HEAD behavior is what users get: the published PyPI
-  wheel can lag the repo (historical: GAP-032 — four fixes missing from
-  0.1.2; now caught by the `release-readiness` CI job). When a
-  fix touches `harness.py`/`testbed.py`/`protocol.py`, check whether the last
-  PyPI upload predates it; if so, a release is pending.
+  wheel can lag the repo even at the SAME version number (proven 2026-08-23:
+  0.1.3 wheel lacks GAP-035's `_session_status` pass-through — GAP-043; the
+  `release-readiness` version gate stayed green). Manual check: last PyPI
+  upload time vs fix commit time; content diff against the installed wheel.
+- **Do** expect `GET /v1/sessions/{id}` status to be hardcoded `"active"` on
+  the published 0.1.3 wheel even after the session ENDs — the status
+  pass-through only exists in repo HEAD (GAP-035, GAP-043). If your harness
+  sets `status: "completed"` and the wire says `"active"`, that's the wheel,
+  not your bug.
+- **Do** override `on_session_terminate` to actually drop session state if you
+  track sessions — the base implementation is a no-op, so `DELETE
+  /v1/sessions/{id}` returns `{"terminated":true}` while `GET` still returns
+  the session (GAP-044). The quickstart/echo examples don't override it either.
 - **Do** handle `tool_calls` as a LIST (OpenAI style) — real LLM responses
   wrap tool calls in arrays; the shipped examples only show single dicts.
 - **Do** expect handler exceptions to surface as HTTP 200

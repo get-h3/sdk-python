@@ -4,7 +4,7 @@
 (dogfood run 2026-08-03 + project history), and the right way to do things.
 Not raw logs — explained lessons.
 
-**Last verified:** 2026-08-13 (tick #134, GAP-030: 44/44 battery target current; audit-2026-08.md marked superseded)
+**Last verified:** 2026-08-23 (dogfood §7: published 0.1.3 wheel content-stale for GAP-035 — GAP-043/044/045 filed)
 
 ## 1. How the SDK is built
 
@@ -179,3 +179,91 @@ completion pattern moved to the release boundary.
 **Verification history:** 2026-08-03 run → DF-001..005 (install broken).
 2026-08-13 run → GAP-032..035 (install fixed, wheel stale). Repo gates at
 time of run: 138/138 pytest (4.6s), ruff clean, CI 6/6, board 40/40 complete.
+
+---
+
+## 7. 2026-08-23 — Same disease, one level deeper: same-version content drift (GAP-043/044/045)
+
+**Run summary:** fresh-venv `pip install h3-harness-sdk` → **0.1.3** (published
+08-13); verbatim README quickstart + Testbed snippet both run; from-scratch
+tool-calling harness (TaskBrain) passed **44/44 h3-test** against the published
+package; repo gates 145/145 pytest (3.69s), ruff 0, board 51/51 complete.
+The promise holds on the released artifact — and yet the artifact is stale.
+
+### 7.1 The wheel-vs-repo content gap (GAP-043)
+
+**Symptom (user's view):** my harness sets `get_session_info(...)["status"] =
+"completed"` when the loop ends; `GET /v1/sessions/{id}` on the installed 0.1.3
+always returns `"status":"active"`. MockHermes shows `completed` (raw dict);
+the wire never does. GAP-035's pass-through — board-✅ — is absent from the
+only artifact users can install.
+
+**Root cause (proven by diff + git log):**
+
+```diff
+--- repo HEAD harness.py            +++ installed 0.1.3 wheel harness.py
++def _session_status(value): ...     (absent)
+- status=_session_status(info.get("status")),
++ status=SessionStatus.ACTIVE,
+```
+
+Timeline (all times -0500, 2026-08-13):
+1. `19:18` — 0.1.3 wheel uploaded to PyPI (built from a tree without GAP-035).
+2. `19:20` — commit `7b89b2b` "publish stale-fixes wheel + CI release-readiness
+   gate" (the GAP-032 fix — version-number comparison only).
+3. `19:21` — commit `1098bf1` "feat(GAP-035): router passes through
+   get_session_info status" lands on main.
+4. Never re-published. The gate compares **versions** (0.1.3 == 0.1.3 → green),
+   so content drift within a version sails through. The battery also can't see
+   it: 44/44 passed against the stale wheel (no session-status-emission
+   assertion).
+
+**The right way (fix direction, filed as GAP-043):**
+1. Publish 0.1.4 (prefer a bump over a same-version rebuild — same-version
+   rebuilds are invisible to `pip` caches and the gate).
+2. Make the release-readiness gate a **content** check, not just a version
+   check: in CI, `pip install h3-harness-sdk` into a scratch venv and either
+   assert the GAP-035 behavior live (harness sets status → GET reflects it) or
+   grep the installed `harness.py` for `_session_status`. A 20-line job.
+3. Battery coverage for session-status emission (cross-repo, get-h3/shim —
+   GAP-045): drive process→…→end on a status-tracking harness, assert GET
+   returns `completed`. Today the gate green-lights wheels that can never emit
+   COMPLETED.
+
+**Generalized lesson:** "done" must be defined on the **shipped artifact**, not
+the repo. Two release-boundary failures in ten days (0.1.2 in §6, 0.1.3 here)
+say the version-number gate is necessary but not sufficient: any check that
+compares the repo to PyPI must compare *content* (install the wheel, probe it),
+not just version strings. The 3-minute gap between publish and fix commit is
+the whole failure; a content gate would have caught it on the next CI run.
+
+### 7.2 DELETE terminates nothing (GAP-044)
+
+`DELETE /v1/sessions/{id}` → `{"terminated":true}` (200), then
+`GET /v1/sessions/{id}` → 200 with full session data. The router calls
+`on_session_terminate`, whose base implementation is a **no-op**, and neither
+the README quickstart nor `examples/echo.py` overrides it — so the default
+harness promises termination and delivers nothing. The battery has no
+delete-then-get case. Fix direction: document the contract in README with a
+3-line cleanup example, add cleanup to echo.py/quickstart, add battery coverage.
+
+### 7.3 How the release pipeline actually works (so the next fix lands)
+
+1. Fixes land on main; `_version.py`/`pyproject.toml` carry the version.
+2. A human (or the foreman with `PYPI_API_TOKEN`) runs `make build && uv
+   publish` — the **only** step that moves code to users. There is no
+   scheduled release task; publishes happen ad hoc (observed: 0.1.1→0.1.2→0.1.3
+   all on 08-08/08-13).
+3. `release-readiness` CI (GAP-032) fails only when PyPI version < repo
+   version. `docs-version-sweep` CI (GAP-040) catches docs version drift.
+4. Gap: nothing checks that the published wheel *contains* repo-HEAD behavior.
+   When a fix touches `harness.py`/`testbed.py`/`protocol.py`, the 1-line
+   sanity check is: compare the last PyPI upload time against the fix commit
+   time (both are one curl / one `git log` away). If the upload predates the
+   fix — release, or the board's green is fiction for users.
+
+**Verification history:** 2026-08-03 → DF-001..005. 2026-08-13 → GAP-032..035
+(wheel stale, version lag). 2026-08-23 → GAP-043..045 (wheel stale, same-version
+content drift). Repo gates at time of run: 145/145 pytest (3.69s), ruff 0,
+board 51/51 complete, CI release-readiness green — all while the shipped wheel
+lacked a completed fix.
