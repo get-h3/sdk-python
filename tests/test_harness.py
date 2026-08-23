@@ -93,6 +93,39 @@ class SessionTrackingHarness(BaseHarness):
         return self._sessions.get(session_id)
 
 
+class TerminatingHarness(BaseHarness):
+    """GAP-044: tracks sessions AND cleans them up on DELETE.
+
+    Mirrors the README quickstart + echo.py template: sessions are popped
+    from tracking in on_session_terminate so a terminated session 404s on
+    a later GET — what the wire promises (DELETE returns terminated:true).
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._sessions: dict[str, dict] = {}
+
+    async def on_process(self, req):
+        self._sessions[req.session_id] = {"status": "active"}
+        return Decision(
+            decision=DecisionType.TEXT,
+            text=TextResponse(content=f"Echo: {req.message.content}", finished=True),
+        )
+
+    async def on_result(self, req):
+        return Decision(
+            decision=DecisionType.END,
+            end=End(reason=EndReason.TASK_COMPLETE.value),
+        )
+
+    async def on_session_terminate(self, session_id: str) -> None:
+        # DELETE /v1/sessions/{id} -> forget the session so a later GET 404s.
+        self._sessions.pop(session_id, None)
+
+    def get_session_info(self, session_id: str) -> dict | None:
+        return self._sessions.get(session_id)
+
+
 class QuickstartHarness(BaseHarness):
     """GAP-025 regression: mirrors the README quickstart pattern.
 
@@ -127,6 +160,18 @@ def app_tracking():
 @pytest.fixture()
 def client_tracking(app_tracking):
     return TestClient(app_tracking)
+
+
+@pytest.fixture()
+def app_terminating():
+    a = FastAPI()
+    a.include_router(create_router(TerminatingHarness()))
+    return a
+
+
+@pytest.fixture()
+def client_terminating(app_terminating):
+    return TestClient(app_terminating)
 
 
 # ── Valid helpers ───────────────────────────────────────────────────
@@ -327,6 +372,32 @@ def test_delete_session_tracking_unknown_session_404(client_tracking):
     """
     r = client_tracking.delete("/v1/sessions/sess-unknown")
     assert r.status_code == 404
+
+
+def test_delete_then_get_404_with_cleanup_override(client_terminating):
+    """GAP-044: a harness overriding on_session_terminate (pop from tracking)
+    makes a terminated session 404 on later GET — the wire promises
+    termination, harness state must follow.
+    """
+    r = client_terminating.post("/v1/process", json=_process_body())
+    assert r.status_code == 200
+    r = client_terminating.delete("/v1/sessions/s-1")
+    assert r.status_code == 200
+    assert r.json()["terminated"] is True
+    r = client_terminating.get("/v1/sessions/s-1")
+    assert r.status_code == 404
+
+
+def test_delete_then_get_200_without_cleanup_override(client_tracking):
+    """GAP-044 contract baseline: the base on_session_terminate is a no-op,
+    so without an override a terminated session stays retrievable (200).
+    README documents the override as the fix.
+    """
+    r = client_tracking.delete("/v1/sessions/sess-tracked")
+    assert r.status_code == 200
+    assert r.json()["terminated"] is True
+    r = client_tracking.get("/v1/sessions/sess-tracked")
+    assert r.status_code == 200
 
 
 # ── Error handling ──────────────────────────────────────────────────
