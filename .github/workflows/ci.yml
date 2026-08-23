@@ -167,6 +167,37 @@ jobs:
           print("OK: published wheel is current (or ahead of repo)")
           EOF
 
+      # GAP-043: content-staleness gate — version equality is not content
+      # equality. The 0.1.3 wheel shipped with a hardcoded ACTIVE status
+      # while repo HEAD carried the GAP-035 _session_status logic, and the
+      # version-only compare above stayed green (0.1.3 == 0.1.3). This step
+      # installs the PUBLISHED wheel into a scratch venv (never the local
+      # source tree) and asserts the GAP-035 logic is actually present in
+      # the shipped harness module. Fails when the wheel is content-stale
+      # even if version numbers match.
+      - name: Verify published wheel content (GAP-035 _session_status present)
+        run: |
+          python -m venv "$RUNNER_TEMP/gap043-venv"
+          "$RUNNER_TEMP/gap043-venv/bin/pip" install --quiet h3-harness-sdk
+          "$RUNNER_TEMP/gap043-venv/bin/python" - <<'EOF'
+          import inspect
+          import sys
+
+          import h3_harness.harness as h
+
+          # _session_status is a module-level helper (not a BaseHarness
+          # method), so probe the module source, not the class source.
+          if not hasattr(h, "_session_status") or "_session_status" not in inspect.getsource(h):
+              print(
+                  "FAIL: published wheel is content-stale — GAP-035 "
+                  "_session_status logic missing from h3_harness.harness. "
+                  "Version numbers match but content drifted. "
+                  "Rebuild from repo HEAD and publish again."
+              )
+              sys.exit(1)
+          print("OK: published wheel contains GAP-035 _session_status logic")
+          EOF
+
   # GAP-040: docs-version-sweep gate — every release (0.1.1→0.1.2→0.1.3) has
   # produced a new stale-version GAP row (GAP-014, GAP-016, GAP-037-adjacent,
   # GAP-039) because no release checklist covered doc-version references.
