@@ -119,11 +119,16 @@ def _server_port(argv=None) -> int:
     return int(args[0]) if args else 9191
 
 
+# ── App ────────────────────────────────────────────────────────────
+# Module-level `app` so the example can be served directly with
+# `uvicorn h3_harness.examples.echo:app` (README Examples section).
+app = FastAPI()
+app.include_router(create_router(EchoHarness()))
+add_middleware(app)
+
+
 # ── Run ────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     import uvicorn
 
-    app = FastAPI()
-    app.include_router(create_router(EchoHarness()))
-    add_middleware(app)
     uvicorn.run(app, host="0.0.0.0", port=_server_port())

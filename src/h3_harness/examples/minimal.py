@@ -62,10 +62,15 @@ class MinimalHarness(BaseHarness):
         return self._sessions.get(session_id)
 
 
+# ── App ────────────────────────────────────────────────────────────
+# Module-level `app` so the example can be served directly with
+# `uvicorn h3_harness.examples.minimal:app` (README Examples section).
+app = FastAPI()
+app.include_router(create_router(MinimalHarness()))
+add_middleware(app)
+
+
 if __name__ == "__main__":
     import uvicorn
 
-    app = FastAPI()
-    app.include_router(create_router(MinimalHarness()))
-    add_middleware(app)
     uvicorn.run(app, host="0.0.0.0", port=8000)
