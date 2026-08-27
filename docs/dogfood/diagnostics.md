@@ -1,5 +1,11 @@
 # H3 Python SDK — Diagnostics Trail
 
+> **SUPERSEDED (historical record):** this trail documents dogfood runs from
+> 2026-08-03 → 2026-08-23. Test counts cited here (e.g. "145/145 pytest")
+> reflect the suite at those times — the current suite is **147 tests**
+> (GAP-044's delete-then-get regression tests landed after the last run).
+> Treat all counts and board states in this document as historical.
+
 **What this is:** how `h3-harness-sdk` is built, why, the errors encountered
 (dogfood run 2026-08-03 + project history), and the right way to do things.
 Not raw logs — explained lessons.

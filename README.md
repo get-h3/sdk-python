@@ -23,6 +23,18 @@ cd sdk-python
 pip install -e .
 ```
 
+**From a clean system** (no `pip` preinstalled — e.g. a minimal Ubuntu
+container): bootstrap a venv first, then install into it:
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -e ".[dev]"
+# or the one-command equivalent: make install
+```
+
+`make install` creates `.venv` (via `python3 -m venv`), upgrades pip inside
+it, and installs the package with dev extras — no system pip required.
+
 ## Quickstart
 
 ```python
@@ -82,6 +94,25 @@ app.include_router(create_router(MyHarness()))
 # Run with: uvicorn my_harness:app --port 9191
 ```
 
+**Trying it out:** with the server running, send a minimal request. The
+payload must include `identity`, `context.config`, and `context.session_state`
+(plus `message` and `session_id`) or the router rejects it with a 422:
+
+```bash
+curl -X POST http://localhost:9191/v1/process \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "session_id": "sess-001",
+    "identity": {"chat_id": "chat-1", "platform": "cli"},
+    "message": {"content": "Hello, harness!"},
+    "context": {"config": {}, "session_state": {}, "history": []}
+  }'
+```
+
+→ `{"decision":"text","decision_id":"...","history":[],"text":{"content":"Echo: Hello, harness!","finished":true}}`
+
+Health is at **`/v1/health`** (not `/health`): `curl http://localhost:9191/v1/health`.
+
 ### Session lifecycle
 
 `DELETE /v1/sessions/{id}` invokes `on_session_terminate(session_id)` on the
@@ -127,6 +158,21 @@ if __name__ == "__main__":
 - **[echo.py](src/h3_harness/examples/echo.py)** — Echo harness that mirrors user messages
 - **[minimal.py](src/h3_harness/examples/minimal.py)** — Minimal harness with health endpoint, uvicorn runner
 - **[langchain_agent.py](src/h3_harness/examples/langchain_agent.py)** — LangChain integration: LLM call with text response
+
+Each example exposes a module-level `app` and a `python -m` runner. Either
+works:
+
+```bash
+# uvicorn against the module-level app (any port)
+uvicorn h3_harness.examples.echo:app --port 9191
+uvicorn h3_harness.examples.minimal:app --port 8000
+
+# or the built-in runner (echo.py accepts an optional port argument)
+python -m h3_harness.examples.echo 9191
+python -m h3_harness.examples.minimal
+```
+
+`langchain_agent.py` additionally requires `pip install langchain langchain-openai`.
 
 ## Passing the battery (h3-test compliance)
 
@@ -243,7 +289,7 @@ make fmt       # ruff format
 ```
 
 **Running tests:** use the project venv — `make install` then `.venv/bin/pytest`
-(145 tests). Bare `pytest` on an ambient interpreter may fail to import
+(147 tests). Bare `pytest` on an ambient interpreter may fail to import
 `h3_harness`; `pytest.ini`'s `pythonpath = src` covers collection from the
 source tree without an install, but the project venv is the supported path.
 
