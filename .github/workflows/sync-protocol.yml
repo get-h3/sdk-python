@@ -92,3 +92,7 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist/
+
+  roundtrip:
+    needs: regenerate
+    uses: get-h3/h3/.github/workflows/roundtrip.yml@main
