@@ -95,7 +95,7 @@ the breakage; replacing `_*.py` with `/_*.py` fixed it.
   untracked rebuildable caches). Board files:
   `.coding-hermes/board/{schema.sql,tasks.jsonl,events.jsonl,fixtures.jsonl}`.
 - `E2E-001` (per-tick battery run) is the project's own self-check: the shipped
-  echo example scores 44/44 against `h3-test`. **The echo example is the
+  echo example scores 45/45 against `h3-test`. **The echo example is the
   reference implementation** — when in doubt about a battery convention,
   read `src/h3_harness/examples/echo.py` (it implements all three DF-004
   conventions).
@@ -192,7 +192,7 @@ time of run: 138/138 pytest (4.6s), ruff clean, CI 6/6, board 40/40 complete.
 
 **Run summary:** fresh-venv `pip install h3-harness-sdk` → **0.1.3** (published
 08-13); verbatim README quickstart + Testbed snippet both run; from-scratch
-tool-calling harness (TaskBrain) passed **44/44 h3-test** against the published
+tool-calling harness (TaskBrain) passed **45/45 h3-test** against the published
 package; repo gates 145/145 pytest (3.69s), ruff 0, board 51/51 complete.
 The promise holds on the released artifact — and yet the artifact is stale.
 
@@ -221,7 +221,7 @@ Timeline (all times -0500, 2026-08-13):
    get_session_info status" lands on main.
 4. Never re-published. The gate compares **versions** (0.1.3 == 0.1.3 → green),
    so content drift within a version sails through. The battery also can't see
-   it: 44/44 passed against the stale wheel (no session-status-emission
+   it: 45/45 passed against the stale wheel (no session-status-emission
    assertion).
 
 **The right way (fix direction, filed as GAP-043):**

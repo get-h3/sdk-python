@@ -95,4 +95,4 @@ app.include_router(create_router(MyHarness()))
 
 See the [README](../../README.md) for install instructions and the quickstart,
 and the [passing-the-battery section](../../README.md#passing-the-battery-h3-test-compliance)
-for what the h3-test compliance suite (44 tests) checks.
+for what the h3-test compliance suite (45 tests) checks.

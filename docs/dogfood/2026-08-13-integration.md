@@ -39,7 +39,7 @@ success: ~2 min** (install + import + uvicorn up + health 200).
 ```bash
 venv/bin/pip install /path/to/get-h3/shim   # or git+https://github.com/get-h3/shim
 venv/bin/h3-test --endpoint http://127.0.0.1:9191
-# 44/44 PASSED, exit 0  (0.92s, p50 2.8ms / p95 130ms)
+# 45/45 PASSED, exit 0  (0.92s, p50 2.8ms / p95 130ms)
 ```
 
 First attempt: **43/44** — the battery caught my own bug: I applied convention

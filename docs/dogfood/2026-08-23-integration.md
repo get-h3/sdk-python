@@ -12,7 +12,7 @@ package only (PyPI 0.1.3). Scratch: `/tmp/dogfood-h3sdk-0823/`.
 
 > "A Python developer can `pip install h3-harness-sdk` (PyPI), subclass
 > `BaseHarness`, mount `create_router()` on FastAPI, run uvicorn, and ship an
-> H3-compliant harness that passes the 44-test h3-test battery."
+> H3-compliant harness that passes the 45-test h3-test battery."
 
 H3 = "Hermes Harness Hooks": the SDK builds the *body* — a harness that Hermes
 Core drives over HTTP as its thinking *brain* (brain-swap protocol; see
@@ -73,10 +73,10 @@ Decision Types       6/6   ✅ PASSED
 Result Handling      7/7   ✅ PASSED
 Error & Edge Cases   11/11 ✅ PASSED
 Stress & Performance 5/5   ✅ PASSED
-TOTAL                44/44 PASSED  (0.26s, p50 0.90ms / p95 35.86ms)
+TOTAL                45/45 PASSED  (0.26s, p50 0.90ms / p95 35.86ms)
 ```
 
-**The from-scratch harness passes 44/44 against the PUBLISHED package.** The
+**The from-scratch harness passes 45/45 against the PUBLISHED package.** The
 promise holds.
 
 ### 2.5 The two findings (both live-verified, both surprises)
@@ -109,7 +109,7 @@ deeper — same-version content drift. GAP-043 filed (P1).
 `GET /v1/sessions/tb-3` → **200** with `turn_count`/`started_at`/`status`.
 The base `on_session_terminate` is a no-op, and neither the README quickstart
 nor `examples/echo.py` override it — so every quickstart-following user gets a
-wire that promises termination while the session lives on. Battery 44/44 has
+wire that promises termination while the session lives on. Battery 45/45 has
 no delete-then-get case. GAP-044 filed (P2).
 
 ## 3. Friction log (what a new user hits)
@@ -136,7 +136,7 @@ no delete-then-get case. GAP-044 filed (P2).
 - Install path: PyPI 0.1.3 wheel + sdist, works (GAP-010/013 hold).
 - Verbatim quickstart + testbed snippets both runnable (GAP-017/026 hold).
 - All four battery conventions documented and working (DF-004/GAP-002 hold).
-- 44/44 battery from a from-scratch harness (the compliance story holds).
+- 45/45 battery from a from-scratch harness (the compliance story holds).
 - Error masking documented (GAP-034) — README "Error handling" section.
 - Wheel contains `__init__.py` (DF-001) — verified implicitly by import.
 
@@ -151,7 +151,7 @@ python3 -m venv venv && ./venv/bin/pip install h3-harness-sdk
 app = FastAPI(); app.include_router(create_router(MyHarness()))
 uvicorn my_harness:app --port 9191
 ./venv/bin/pip install git+https://github.com/get-h3/shim   # battery CLI
-./venv/bin/h3-test --endpoint http://localhost:9191          # 44/44 = compliant
+./venv/bin/h3-test --endpoint http://localhost:9191          # 45/45 = compliant
 ```
 
 ## 6. Files
