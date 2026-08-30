@@ -177,7 +177,7 @@ python -m h3_harness.examples.minimal
 ## Passing the battery (h3-test compliance)
 
 The gate for any H3 harness is the **test battery** (`test_battery.py` from
-[get-h3/shim](https://github.com/get-h3/shim) — 44 tests across 6 categories).
+[get-h3/shim](https://github.com/get-h3/shim) — 45 tests across 6 categories).
 Run it against any running harness endpoint:
 
 ```bash
@@ -187,8 +187,8 @@ h3-test --endpoint http://localhost:9191   # exit 0 = compliant
 ```
 
 The Quickstart harness above implements all four conventions and is fully
-battery-compliant (**44/44**). If you modify it, keep the conventions intact —
-a naive harness that drops them scores **41/44**. The four conventions the
+battery-compliant (**45/45**). If you modify it, keep the conventions intact —
+a naive harness that drops them scores **42/45**. The four conventions the
 battery checks (beyond "return a Decision") are:
 
 1. **Echo `context.history` in every Decision returned from `on_process`.**
@@ -219,7 +219,7 @@ battery checks (beyond "return a Decision") are:
    turns that into the 404.
 
 The canonical battery-ready template is **[echo.py](src/h3_harness/examples/echo.py)**
-— it implements all four conventions and scores 44/44. Use it as the starting
+— it implements all four conventions and scores 45/45. Use it as the starting
 point for your own harness.
 
 ## Error handling

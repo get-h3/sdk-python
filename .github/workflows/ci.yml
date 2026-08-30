@@ -60,8 +60,8 @@ jobs:
       - name: Test
         run: make test
 
-  # GAP-001: the 44/44 h3-test claim (README "Passing the battery",
-  # examples/echo.py as 44/44 template — DF-004) was previously verified
+  # GAP-001: the 45/45 h3-test claim (README "Passing the battery",
+  # examples/echo.py as 45/45 template — DF-004) was previously verified
   # only by hand; a protocol-model or router refactor could silently break
   # compliance while CI stayed green. This job serves the canonical echo
   # harness and runs the real battery against it — h3-test exits non-zero
@@ -111,11 +111,11 @@ jobs:
           cat battery-server.log || true
           exit 1
 
-      - name: Run h3-test battery (44/44 gate)
+      - name: Run h3-test battery (45/45 gate)
         run: |
           set -o pipefail
           h3-test --endpoint http://localhost:9191 | tee battery.log
-          grep -q "44/44" battery.log
+          grep -q "45/45" battery.log
 
   # GAP-032: release-readiness gate — the published PyPI wheel must not lag
   # the repo version. GAP-019/025/029 fixes were complete on main for days
