@@ -141,7 +141,7 @@ git push origin v0.1.3
 # CI publishes to PyPI automatically
 ```
 
-Current published version: `0.1.4` (`h3-harness-sdk` on PyPI; single source
+Current published version: `0.1.5` (`h3-harness-sdk` on PyPI; single source
 `src/h3_harness/_version.py` — the CI `docs-version-sweep` job fails if a
 living doc references an older version).
 
