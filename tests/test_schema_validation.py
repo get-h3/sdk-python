@@ -13,6 +13,7 @@ Tests:
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import jsonschema
@@ -50,13 +51,14 @@ from h3_harness.protocol import (
 
 # ── Schema loading ───────────────────────────────────────────────────
 
-# SCHEMA_DIR: get-h3/protocol/schemas/v1/
-# test_schema_validation.py is at get-h3/sdk-python/tests/
-SCHEMA_DIR = (
-    Path(__file__).resolve().parent.parent.parent  # get-h3/sdk-python → get-h3
-    / "protocol"
-    / "schemas"
-    / "v1"
+# SCHEMA_DIR: vendored protocol JSON schemas, tests/schemas/v1/
+# (mirrors get-h3/protocol/schemas/v1/ so the conformance tests run on a
+# standalone clone with no sibling checkout).
+# Override with H3_SCHEMA_DIR to validate against a newer protocol checkout.
+SCHEMA_DIR = Path(
+    os.environ["H3_SCHEMA_DIR"]
+    if "H3_SCHEMA_DIR" in os.environ
+    else Path(__file__).resolve().parent / "schemas" / "v1"
 )
 
 
