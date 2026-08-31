@@ -2,6 +2,14 @@
 
 All notable changes to the H3 Python SDK.
 
+## [0.1.5] — 2026-08-31
+
+### Added
+- `src/h3_harness/examples/echo.py` now exposes a module-level
+  `app = FastAPI()` — fresh installs can serve the example directly with
+  `uvicorn h3_harness.examples.echo:app` (previously only the shipped 0.1.4
+  wheel lacked it; HEAD already had the fix, this release ships it)
+
 ## [0.1.3] — 2026-08-14
 
 ### Added
