@@ -85,3 +85,13 @@ Promise: {"entry_point": "Python library (no standalone CLI): BaseHarness + crea
 - [P2] Battery count drifts 44 vs 45 across docs; actual run = 45 — Shim AGENTS.md and umbrella AGENTS.md say 44, sdk-python README and the actual h3-test run say 45. Headline compliance number is inconsistent — one canonical count needed.
 - [P2] pip install h3-harness-sdk fails today — not on PyPI — The promise's headline install command doesn't resolve (package unpublished); git-install fallback is documented in the README and works, but the canonical one-liner errors out.
 - [P2] GET /v1/health returns active_sessions:null from echo example even with live sessions — Harness never populates active_sessions, so the flag reads null mid-session — cosmetic, but looks like a bug to a first-time user and is undocumented as expected behavior.
+
+## Dogfood Findings (2026-09-04)
+Verdict: SHIPPABLE
+Promise: {"entry_point":"Python library (PyPI package h3-harness-sdk, import h3_harness) that produces an HTTP server: subclass BaseHarness + create_router() into a FastAPI app, served via uvicorn on :9191 (e.g. src/h3_harness/examples/echo.py); no standalone CLI binary or MCP.","promise":"This project claim
+
+- [P1] README claims Quickstart is 45/45 but verbatim copy scores 44/45 — Copied the README Quickstart verbatim (my_harness.py, 47 lines), served via uvicorn on :9192, ran h3-test: 44/45 FAILED, Error & Edge Cases 11/12 — session_status_completed: "status='active' — expecte
+- [P1] make generate is a dead target on a fresh clone — make generate → 'ERROR: Schema directory not found: protocol-src/schemas/v1' (exit 1). No protocol-src dir in repo, no .gitmodules, README never mentions the directory or the target (grep 'generate' i
+- [P2] Battery count drift: shim AGENTS.md says 44, actual battery runs 45 — shim AGENTS.md line 19/24: '44 compliance tests. THE GATE.' / '44 tests, 6 categories' — but test_battery.py contains 45 'def test_' and live runs report 45/45 (7+8+6+7+12+5). SDK README correctly say
+- [P2] No example curl for POST /v1/result anywhere in README — README shows only the /v1/process curl; the result endpoint's decision_id requirement is discoverable only by hitting a 422. The result payload shape is mentioned once (line 204, 'has no context field
+- [P2] active_sessions:null in /v1/health looks like a bug with live sessions — Verified live: during battery runs with active sessions, GET /v1/health returns {"status":"ok","version":"0.1.5","active_sessions":null,...}. HealthResponse defaults active_sessions to None and the ec

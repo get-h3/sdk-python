@@ -128,3 +128,4 @@ Full report: `docs/dogfood/2026-08-23-integration.md`,
 foreman NOT woken (cooldown 21600 is an operator pin in ~/.hermes/fleet.toml L242;
 next natural tick picks the tasks up).
 2026-09-01 | SHIPPABLE | 15s t2fs | friction 6 | 5 findings
+2026-09-04 | SHIPPABLE | 17s t2fs | friction 7 | 5 findings
