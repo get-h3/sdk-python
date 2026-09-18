@@ -1,5 +1,10 @@
 # Dogfood Integration Report — 2026-08-13
 
+> **Historical (2026-08-13):** point-in-time dogfood record — the pytest and
+> compliance-battery counts quoted below were correct when written and are **not
+> live status**. The canonical counts this repo enforces live in
+> `scripts/test-count.txt`, checked by `scripts/check-test-count.sh`.
+
 **Project:** get-h3/sdk-python (`h3-harness-sdk` 0.1.2, PyPI)
 **Verdict:** 🟡 PROMISING-BUT-ROUGH — core promise holds end-to-end; published
 wheel is stale vs repo HEAD (GAP-032) + two SDK/docs gaps (GAP-033/034).

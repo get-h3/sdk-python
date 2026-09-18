@@ -47,7 +47,7 @@ sdk-python/
 
 ```bash
 make test          # uv run pytest -x --tb=short -q
-# 128 tests
+# 179 tests
 ```
 
 ### Run Lint + Format Check
@@ -68,7 +68,7 @@ uv run python src/h3_harness/examples/echo.py
 
 # In another terminal, run the compliance test battery:
 h3-test --endpoint http://localhost:9191
-# 44 compliance tests, exit code 0 = compliant
+# 46 compliance tests, exit code 0 = compliant
 ```
 
 ### Regenerate Protocol Types
@@ -108,9 +108,10 @@ This regenerates `src/h3_harness/protocol.py` from `get-h3/protocol` schemas. Ne
 
 ### Echo Example (Battery Conventions)
 
-`src/h3_harness/examples/echo.py` is the battery-ready template (44/44 compliant).
+`src/h3_harness/examples/echo.py` is the battery-ready template (46/46 compliant).
 If you modify it, keep the conventions intact — a naive harness that drops them
-scores 41/44: echo `context.history` in every Decision, never issue `llm_call`
+scores well below 46/46 (README measures one at 40/46): echo `context.history` in
+every Decision, never issue `llm_call`
 when `context.models` is empty, return `text.finished=false` for "do not finish"
 prompts, and 404 unknown sessions.
 
@@ -121,15 +122,15 @@ prompts, and 404 unknown sessions.
 ```bash
 make lint          # uv run ruff check src/ tests/
 make fmt           # uv run ruff format src/ tests/ (then re-check)
-make test          # uv run pytest -x --tb=short -q (128 tests)
+make test          # uv run pytest -x --tb=short -q (179 tests)
 ```
 
 ### CI Pipeline
 
 GitHub Actions runs on every PR:
 1. Lint (ruff)
-2. Tests (pytest, 128 tests)
-3. `h3-test --endpoint http://localhost:9191` (against echo example — 44/44 battery)
+2. Tests (pytest, 179 tests)
+3. `h3-test --endpoint http://localhost:9191` (against echo example — 46/46 battery)
 
 All must pass.
 
@@ -147,9 +148,9 @@ living doc references an older version).
 
 ## Review Checklist
 
-- [ ] `make test` passes (128 tests)
+- [ ] `make test` passes (179 tests)
 - [ ] `make lint` passes
-- [ ] `h3-test --endpoint http://localhost:9191` passes against echo example (44/44)
+- [ ] `h3-test --endpoint http://localhost:9191` passes against echo example (46/46)
 - [ ] New Pydantic fields use `Optional` where appropriate
 - [ ] Protocol changes regenerated via `make generate`
 - [ ] No hand-edits to generated types

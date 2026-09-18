@@ -15,7 +15,7 @@ The H3 ("Hermes Harness Hooks") protocol lets an external agent system become
 the *thinking brain* of Hermes Core. This SDK is how Python developers build
 the *body* side: an **H3-compliant harness** (a FastAPI app) that Hermes talks
 to over HTTP. Compliance is enforced by the official test battery
-(`h3-test`, 44 tests, from get-h3/shim) — the gate for any harness.
+(`h3-test`, 46 tests, from get-h3/shim) — the gate for any harness.
 
 ## What the SDK promises
 
@@ -26,7 +26,7 @@ to over HTTP. Compliance is enforced by the official test battery
 
 **Last verified: 2026-08-23** (dogfood run: fresh venv `pip install h3-harness-sdk`
 → 0.1.3, import OK, verbatim quickstart + testbed run, from-scratch harness
-44/44 battery PASS — BUT the 0.1.3 wheel is content-stale for GAP-035, see
+battery PASS — BUT the 0.1.3 wheel is content-stale for GAP-035, see
 pitfalls).
 
 1. **✅ `pip install h3-harness-sdk`** — the package IS published on PyPI
@@ -99,7 +99,7 @@ GET/DELETE /v1/sessions/{id}, POST /v1/cancel, GET /v1/health
   `{"decision":"end","reason":"error","summary":...}` with HTTP 200 — check
   the `summary` when a session ends unexpectedly.
 
-## The 3 battery conventions (undocumented in README — REQUIRED for 44/44)
+## The 3 battery conventions (undocumented in README — REQUIRED for 46/46)
 
 1. **Echo history:** include `history=list(req.context.history)` in every
    Decision returned from **`on_process`** (test: `process_preserves_history`).
@@ -114,8 +114,8 @@ GET/DELETE /v1/sessions/{id}, POST /v1/cancel, GET /v1/health
    the battery caught a harness that missed it there (2026-08-13 run).
 
 The shipped `src/h3_harness/examples/echo.py` implements all three — treat it
-as the reference implementation. A from-scratch harness following these scored
-44/44 (see `docs/dogfood/2026-08-03-integration.md` for a full example).
+as the reference implementation. A from-scratch harness following these passed
+the whole battery (see `docs/dogfood/2026-08-03-integration.md` for a full example).
 
 ## Test without a server: MockHermes
 
@@ -134,7 +134,7 @@ assert decision.text.content == "Echo: Hello!"
 # any harness server:
 uvicorn my_harness:app --port 9191
 # THE GATE (from get-h3/shim; a binary may exist in another venv):
-h3-test --endpoint http://127.0.0.1:9191        # 44/44 + exit 0 = compliant
+h3-test --endpoint http://127.0.0.1:9191        # 46/46 + exit 0 = compliant
 ```
 
 ## Pitfalls

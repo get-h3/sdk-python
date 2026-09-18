@@ -1,9 +1,9 @@
 """Minimal H3 Harness — the smallest runnable, battery-compliant example.
 
 A bare-bones BaseHarness subclass with no real logic. Use this as a starting
-template when building your own harness — it stays battery-compliant (44/44)
-by tracking sessions (unknown ids 404), echoing context.history, and applying
-the "do not finish" streaming heuristic.
+template when building your own harness — it stays battery-compliant by tracking
+sessions (unknown ids 404), echoing context.history, and applying the "do not
+finish" streaming heuristic. It passes the full h3-test battery (currently 46/46).
 
 Run:
     python src/h3_harness/examples/minimal.py

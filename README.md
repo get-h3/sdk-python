@@ -306,7 +306,7 @@ make generate  # regenerate src/h3_harness/protocol.py from JSON Schema
 ```
 
 **Running tests:** use the project venv — `make install` then `.venv/bin/pytest`
-(157 tests). Bare `pytest` on an ambient interpreter may fail to import
+(179 tests). Bare `pytest` on an ambient interpreter may fail to import
 `h3_harness`; `pytest.ini`'s `pythonpath = src` covers collection from the
 source tree without an install, but the project venv is the supported path.
 

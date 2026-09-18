@@ -5,7 +5,7 @@ Demonstrates the full agent loop:
   - on_result     → TEXT (return the LLM response to the user)
   - on_result     → END  (finish the session after text is sent)
 
-Battery-compliant (44/44):
+Battery-compliant (passes the full h3-test battery, currently 46/46):
   - never issues llm_call when context.models is empty (falls back to TEXT)
   - echoes context.history in every Decision
   - tracks sessions so unknown ids 404 (get_session_info)

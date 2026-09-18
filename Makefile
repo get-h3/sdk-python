@@ -1,4 +1,4 @@
-.PHONY: install build test lint fmt clean generate
+.PHONY: install build test test-full verify-counts lint fmt clean generate
 
 VENV := .venv
 PYTHON := $(VENV)/bin/python
@@ -13,6 +13,13 @@ install: $(VENV)
 build:
 	uv build
 	@echo "build: OK — dist/ now contains the wheel (and sdist)"
+
+# H3-GAP-087 — this repo polices its own count prose: canonical counts
+# (scripts/test-count.txt) → live pytest collection parity → battery parity
+# against the sibling shim checkout → stale-literal sweep with explicit
+# historical exemptions. Exit 0 pass / 1 drift / 2 guard misconfigured.
+verify-counts:
+	sh scripts/check-test-count.sh
 
 test:
 	uv run pytest -x --tb=short -q
@@ -31,7 +38,7 @@ clean:
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
 
-all: install lint build test
+all: verify-counts install lint build test
 
 generate:
 	uv run python scripts/generate-protocol.py

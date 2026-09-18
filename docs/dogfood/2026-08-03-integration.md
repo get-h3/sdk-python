@@ -1,5 +1,10 @@
 # H3 Python SDK — Integration Report (2026-08-03)
 
+> **Historical (2026-08-03):** point-in-time dogfood record — the pytest and
+> compliance-battery counts quoted below were correct when written and are **not
+> live status**. The canonical counts this repo enforces live in
+> `scripts/test-count.txt`, checked by `scripts/check-test-count.sh`.
+
 **Dogfood run:** field-test of `h3-harness-sdk` 0.1.0 as a real consumer.
 **Verdict:** 🟡 PROMISING-BUT-ROUGH — protocol engine is genuinely good; the
 install path is broken and one shipped example crashes.
