@@ -93,6 +93,13 @@ app.include_router(create_router(MyHarness()))
 | [testbed.md](testbed.md) | `MockHermes` — constructor, methods, pytest round-trip example. |
 | [examples.md](examples.md) | The three shipped examples and what each demonstrates. |
 
+## See also
+
+| Doc | Covers |
+|---|---|
+| [../integration-guide.md](../integration-guide.md) | Step-by-step: prereqs, install, first harness, uvicorn run, curl smoke test (including the `POST /v1/result` `decision_id` chaining example), running the h3-test battery (46 tests), and the exit-code table. |
+| [../api-reference.md](../api-reference.md) | Endpoint reference (all six routes with error cases), request/response model field tables, `Decision` variants, and the `BaseHarness` abstract-vs-optional method contract. |
+
 See the [README](../../README.md) for install instructions and the quickstart,
 and the [passing-the-battery section](../../README.md#passing-the-battery-h3-test-compliance)
-for what the h3-test compliance suite (45 tests) checks.
+for what the h3-test compliance suite (46 tests) checks.

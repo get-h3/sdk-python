@@ -177,7 +177,7 @@ python -m h3_harness.examples.minimal
 ## Passing the battery (h3-test compliance)
 
 The gate for any H3 harness is the **test battery** (`test_battery.py` from
-[get-h3/shim](https://github.com/get-h3/shim) — 45 tests across 6 categories).
+[get-h3/shim](https://github.com/get-h3/shim) — 46 tests across 6 categories).
 Run it against any running harness endpoint:
 
 ```bash
@@ -187,9 +187,10 @@ h3-test --endpoint http://localhost:9191   # exit 0 = compliant
 ```
 
 The Quickstart harness above implements all four conventions and is fully
-battery-compliant (**45/45**). If you modify it, keep the conventions intact —
-a naive harness that drops them scores **42/45**. The four conventions the
-battery checks (beyond "return a Decision") are:
+battery-compliant (**46/46**). If you modify it, keep the conventions intact —
+a naive harness that drops them scores **40/46** (measured against a harness
+with no history echo, no session tracking, and no streaming flag). The four
+conventions the battery checks (beyond "return a Decision") are:
 
 1. **Echo `context.history` in every Decision returned from `on_process`.**
    The battery sends a session with prior history and asserts it flows back
@@ -219,7 +220,7 @@ battery checks (beyond "return a Decision") are:
    turns that into the 404.
 
 The canonical battery-ready template is **[echo.py](src/h3_harness/examples/echo.py)**
-— it implements all four conventions and scores 45/45. Use it as the starting
+— it implements all four conventions and scores 46/46. Use it as the starting
 point for your own harness.
 
 ## Error handling
@@ -301,6 +302,17 @@ in `get-h3/protocol/schemas/v1`. It prefers a sibling `protocol` checkout when
 one sits next to this repo, otherwise it uses the vendored copies in
 `tests/schemas/v1` — so it works on a fresh clone with no sibling checkout.
 Override the source with `--schema-dir /path/to/schemas/v1` or `H3_SCHEMA_DIR`.
+
+## Documentation
+
+- **[docs/integration-guide.md](docs/integration-guide.md)** — prereqs, install,
+  first harness, uvicorn run, curl smoke test (including the `decision_id`
+  chaining example for `POST /v1/result`), and running the h3-test battery.
+- **[docs/api-reference.md](docs/api-reference.md)** — endpoint reference,
+  request/response model field tables, `Decision` variants, and the
+  `BaseHarness` abstract-vs-optional method contract.
+- **[docs/api/index.md](docs/api/index.md)** — the hand-written per-module
+  reference pages (`protocol`, `harness`, `middleware`, `testbed`, `examples`).
 
 ## Reference
 
