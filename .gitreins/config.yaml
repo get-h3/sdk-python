@@ -4,6 +4,15 @@ guards:
   tests: true
   test_mode: diff
   test_command: .venv/bin/python -m pytest -x --tb=short -q
+  # allow_skips: this repo's foreman loop commits board-only changes
+  # (.coding-hermes/board/*.jsonl) every tick. Those commits stage no source
+  # and no test files, so the lint/tests lanes have nothing to grade and
+  # gitreins 0.13.0 reports them as DEGRADED PASS with exit 2 — which this
+  # repo's .git/hooks/pre-commit (plain `gitreins guard; exit $?`) turns into
+  # a BLOCKED commit, i.e. the shared board could not be written at all.
+  # allow_skips accepts zero-work runs as PASS; lanes still run and still fail
+  # the commit whenever a source/test file IS staged. See foreman tick #294.
+  allow_skips: true
 evaluator:
   max_iterations: 50
   max_time: 10m
