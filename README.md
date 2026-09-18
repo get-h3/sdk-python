@@ -286,12 +286,21 @@ make build     # build wheel (and sdist) into dist/
 make test      # run tests
 make lint      # ruff check
 make fmt       # ruff format
+make generate  # regenerate src/h3_harness/protocol.py from JSON Schema
 ```
 
 **Running tests:** use the project venv — `make install` then `.venv/bin/pytest`
-(147 tests). Bare `pytest` on an ambient interpreter may fail to import
+(157 tests). Bare `pytest` on an ambient interpreter may fail to import
 `h3_harness`; `pytest.ini`'s `pythonpath = src` covers collection from the
 source tree without an install, but the project venv is the supported path.
+
+### Regenerating the protocol models
+
+`make generate` regenerates `src/h3_harness/protocol.py` from the JSON Schemas
+in `get-h3/protocol/schemas/v1`. It prefers a sibling `protocol` checkout when
+one sits next to this repo, otherwise it uses the vendored copies in
+`tests/schemas/v1` — so it works on a fresh clone with no sibling checkout.
+Override the source with `--schema-dir /path/to/schemas/v1` or `H3_SCHEMA_DIR`.
 
 ## Reference
 

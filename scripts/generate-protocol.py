@@ -7,10 +7,18 @@ src/h3_harness/protocol.py with Pydantic models.
 Usage:
     make generate
     python scripts/generate-protocol.py --schema-dir /path/to/schemas/v1
+
+Schema source resolution (first existing directory wins):
+    1. --schema-dir <path>
+    2. $H3_SCHEMA_DIR, when set to a non-empty path
+    3. sibling dev checkout: <repo>/../protocol/schemas/v1
+    4. vendored copy: <repo>/tests/schemas/v1 (ships in this repo, so a
+       standalone clone regenerates without a sibling checkout)
 """
 
 import argparse
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -31,6 +39,27 @@ from pydantic import BaseModel, Field
 '''
 
 ENUM_HEADER = "# ── Enums ──\n"
+
+# Schema-source resolution (see resolve_schema_dir).
+ENV_SCHEMA_DIR = "H3_SCHEMA_DIR"
+PROTOCOL_REPO_URL = "https://github.com/get-h3/protocol"
+SIBLING_SCHEMA_DIR = Path("..") / "protocol" / "schemas" / "v1"
+VENDORED_SCHEMA_DIR = Path("tests") / "schemas" / "v1"
+
+
+class SchemaDirNotFoundError(Exception):
+    """No usable schemas/v1 directory: the message names every candidate tried."""
+
+    def __init__(self, attempted: list[str]) -> None:
+        self.attempted = list(attempted)
+        detail = "\n".join(f"  - {item}" for item in attempted)
+        super().__init__(
+            "Schema directory not found. Tried:\n"
+            f"{detail}\n"
+            "Pass --schema-dir /path/to/schemas/v1, set "
+            f"{ENV_SCHEMA_DIR}, or clone {PROTOCOL_REPO_URL} "
+            "next to this repo."
+        )
 
 
 def camel_to_snake(name: str) -> str:
@@ -312,22 +341,68 @@ def generate_protocol(schema_dir: str) -> str:
     return code
 
 
+def resolve_schema_dir(
+    explicit: str | None = None, repo_root: Path | None = None
+) -> Path:
+    """Resolve the schemas/v1 directory to generate protocol.py from.
+
+    The first existing directory wins:
+
+      1. ``explicit`` — the ``--schema-dir`` CLI argument.
+      2. ``$H3_SCHEMA_DIR`` — when set to a non-empty path.
+      3. sibling ``<repo_root>/../protocol/schemas/v1`` — a dev checkout of
+         get-h3/protocol next to this repo.
+      4. vendored ``<repo_root>/tests/schemas/v1`` — the copies committed to
+         this repo, which is what makes a standalone clone work.
+
+    An ``explicit`` path that does not exist is an error: the caller named a
+    corpus, so never fall back silently to a different one. When nothing
+    exists, ``SchemaDirNotFoundError`` names every candidate tried.
+    """
+    root = (
+        Path(repo_root)
+        if repo_root is not None
+        else Path(__file__).resolve().parent.parent
+    )
+
+    if explicit is not None:
+        explicit_dir = Path(explicit)
+        if explicit_dir.is_dir():
+            return explicit_dir
+        raise SchemaDirNotFoundError([f"--schema-dir: {explicit_dir}"])
+
+    attempted = ["--schema-dir: not provided"]
+
+    env_value = os.environ.get(ENV_SCHEMA_DIR, "").strip()
+    if env_value:
+        env_dir = Path(env_value)
+        attempted.append(f"${ENV_SCHEMA_DIR}: {env_dir}")
+        if env_dir.is_dir():
+            return env_dir
+    else:
+        attempted.append(f"${ENV_SCHEMA_DIR}: not set")
+
+    for label, relative in (
+        ("sibling dev checkout", SIBLING_SCHEMA_DIR),
+        ("vendored copy", VENDORED_SCHEMA_DIR),
+    ):
+        candidate = root / relative
+        attempted.append(f"{label}: {candidate}")
+        if candidate.is_dir():
+            return candidate
+
+    raise SchemaDirNotFoundError(attempted)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Regenerate protocol.py")
     parser.add_argument("--schema-dir", default=None, help="Path to schemas/v1")
     args = parser.parse_args()
 
-    if args.schema_dir:
-        schema_dir = args.schema_dir
-    else:
-        repo_root = Path(__file__).resolve().parent.parent
-        schema_dir = repo_root / ".." / "protocol" / "schemas" / "v1"
-        if not schema_dir.exists():
-            schema_dir = Path("protocol-src/schemas/v1")
-
-    schema_dir = Path(schema_dir)
-    if not schema_dir.exists():
-        print(f"ERROR: Schema directory not found: {schema_dir}", file=sys.stderr)
+    try:
+        schema_dir = resolve_schema_dir(args.schema_dir)
+    except SchemaDirNotFoundError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
         sys.exit(1)
 
     print(f"Reading schemas from: {schema_dir}")

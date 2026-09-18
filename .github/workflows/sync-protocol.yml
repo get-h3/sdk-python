@@ -41,7 +41,20 @@ jobs:
           mv "protocol-"* protocol-src
 
       - name: Regenerate types
+        # DF-H3-SDK-PYTHON-FOREMAN-2: the resolver now falls back to the
+        # VENDORED tests/schemas/v1 when there is no sibling ../protocol
+        # checkout, so this job must point it at the tag it just fetched.
+        # Without the pin it would regenerate from the stale vendored copy and
+        # report "no protocol changes", silently ending the sync path.
+        env:
+          H3_SCHEMA_DIR: protocol-src/schemas/v1
         run: make generate
+
+      - name: Refresh vendored schema copies
+        # tests/schemas/v1 is what a standalone clone generates from, so it has
+        # to track the fetched tag — otherwise a fresh clone regenerates the
+        # previous protocol models onto a newer committed protocol.py.
+        run: cp protocol-src/schemas/v1/*.json tests/schemas/v1/
 
       - name: Lint
         run: make lint
