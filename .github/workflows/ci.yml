@@ -60,13 +60,21 @@ jobs:
       - name: Test
         run: make test
 
-  # GAP-001: the 45/45 h3-test claim (README "Passing the battery",
-  # examples/echo.py as 45/45 template — DF-004) was previously verified
-  # only by hand; a protocol-model or router refactor could silently break
-  # compliance while CI stayed green. This job serves the canonical echo
-  # harness and runs the real battery against it — h3-test exits non-zero
-  # on any failure, so CI now gates compliance. Runs as its own job (not
-  # part of the matrix) so the battery executes exactly once.
+  # GAP-001 (+ CI-SDKPY-001): compliance gate on the canonical echo harness.
+  # The battery (get-h3/shim) is the gate — h3-test exits 0 compliant, 1
+  # compliance failure, 2 not an H3 endpoint — and CI serves the battery-ready
+  # echo harness (examples/echo.py) and scores it on every push, so a protocol
+  # or router refactor can no longer silently break compliance while CI stays
+  # green. CI-SDKPY-001: the PASS condition is COUNT-AGNOSTIC. It used to be
+  # `grep -q "45/45"`, but the upstream battery count grows as categories are
+  # added (44 -> 45 -> 46), so the literal drifted out from under the gate and
+  # left main red for days while every test passed (runs 34052395590,
+  # 34053098863, 34126139833, 34355416978). The gate now parses the summary's
+  # TOTAL line and requires passed == total with total >= 45 — a floor, not a
+  # ceiling, so a battery that silently SHRINKS below the 45-test era still
+  # fails. NEVER re-introduce a literal count here: the count is the upstream
+  # battery's business, the PASS/FAIL semantics are ours. Runs as its own job
+  # (not part of the matrix) so the battery executes exactly once.
   battery:
     runs-on: ubuntu-latest
 
@@ -111,11 +119,49 @@ jobs:
           cat battery-server.log || true
           exit 1
 
-      - name: Run h3-test battery (45/45 gate)
+      - name: Run h3-test battery (PASS gate — count-agnostic)
         run: |
           set -o pipefail
-          h3-test --endpoint http://localhost:9191 | tee battery.log
-          grep -q "45/45" battery.log
+          # `|| battery_rc=$?` keeps a non-zero h3-test exit recoverable so the
+          # step can report it explicitly (0 compliant, 1 compliance failure,
+          # 2 not an H3 endpoint) instead of relying on the runner's errexit.
+          battery_rc=0
+          h3-test --endpoint http://localhost:9191 | tee battery.log || battery_rc=$?
+          if [ "$battery_rc" -ne 0 ]; then
+            echo "FAIL: h3-test exited ${battery_rc} (0=compliant, 1=compliance failure, 2=not an H3 endpoint)"
+            exit "$battery_rc"
+          fi
+          python3 - <<'PY'
+          import re
+          import sys
+
+          # CI-SDKPY-001: never gate on a literal count. The upstream battery
+          # grew 44 -> 45 -> 46 and a hardcoded `grep -q "45/45"` turned a
+          # fully-passing battery into a permanently red build. Gate on the
+          # summary's SEMANTICS instead: a TOTAL line reporting every test
+          # passing, plus a floor so a battery that silently SHRANK below the
+          # 45-test era still fails.
+          MIN_TOTAL = 45
+
+          log = open("battery.log", encoding="utf-8", errors="replace").read()
+
+          m = re.search(r"^\s*TOTAL\s+(\d+)/(\d+)\s+PASSED\s*$", log, re.MULTILINE)
+          if m is None:
+              print("FAIL: no 'TOTAL <passed>/<total> PASSED' line found in battery.log")
+              sys.exit(1)
+
+          passed, total = int(m.group(1)), int(m.group(2))
+          print(f"battery summary: TOTAL {passed}/{total} PASSED (floor {MIN_TOTAL})")
+
+          if passed != total:
+              print(f"FAIL: not every battery test passed ({passed}/{total})")
+              sys.exit(1)
+          if total < MIN_TOTAL:
+              print(f"FAIL: battery total {total} is below the {MIN_TOTAL}-test floor")
+              sys.exit(1)
+
+          print(f"OK: count-agnostic PASS gate satisfied — {passed}/{total} passed, total >= {MIN_TOTAL}")
+          PY
 
   # GAP-032: release-readiness gate — the published PyPI wheel must not lag
   # the repo version. GAP-019/025/029 fixes were complete on main for days
