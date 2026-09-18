@@ -1,6 +1,36 @@
 name: Sync Protocol
 
 on:
+  # GAP-073: an SDK source change must exercise the cross-language round-trip,
+  # not only a protocol dispatch. Before this, a wire-format-breaking change to
+  # the harness/protocol source shipped with every workflow green and zero
+  # round-trip runs. Paths are scoped to the files that can change the SDK's
+  # wire behaviour (including the generated src/h3_harness/protocol.py and the
+  # vendored tests/schemas/v1 it generates from); board/.vfs/.gitreins
+  # bookkeeping and prose docs are excluded, so a foreman bookkeeping commit
+  # cannot fire the workflow.
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "scripts/**"
+      - "pyproject.toml"
+      - "pytest.ini"
+      - "uv.lock"
+      - "Makefile"
+      - ".github/workflows/sync-protocol.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "scripts/**"
+      - "pyproject.toml"
+      - "pytest.ini"
+      - "uv.lock"
+      - "Makefile"
+      - ".github/workflows/sync-protocol.yml"
   repository_dispatch:
     types: [protocol-update]
   workflow_dispatch:
@@ -15,6 +45,14 @@ env:
 
 jobs:
   regenerate:
+    # GAP-073: this job regenerates from a tagged protocol release and then
+    # commits, tags and PUBLISHES TO PyPI. PROTOCOL_VERSION resolves only from
+    # client_payload/inputs, so on a push it is empty and the "Fetch protocol
+    # schemas" step fetches .../refs/tags/.tar.gz — a 404 body piped into tar,
+    # i.e. a guaranteed failure that would skip the round-trip job it `needs:`.
+    # Keep it pinned to the events it was written for; the round-trip job runs
+    # for every event.
+    if: ${{ github.event_name == 'repository_dispatch' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -107,5 +145,9 @@ jobs:
           packages-dir: dist/
 
   roundtrip:
+    # GAP-073: unchanged for repository_dispatch/workflow_dispatch — a failed
+    # regeneration/publish still blocks the round-trip — but a SKIPPED
+    # regenerate (the push/pull_request path, where it holds no work) must not.
     needs: regenerate
+    if: ${{ !cancelled() && (needs.regenerate.result == 'success' || needs.regenerate.result == 'skipped') }}
     uses: get-h3/h3/.github/workflows/roundtrip.yml@main
