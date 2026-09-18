@@ -68,6 +68,9 @@ class MyHarness(BaseHarness):
             "turn_count": (
                 self._sessions.get(req.session_id, {}).get("turn_count", 0) + 1
             ),
+            # Battery: sessions start active; on_result flips them to
+            # "completed" (test_5_11 session_status_completed).
+            "status": "active",
         }
         return Decision(
             decision=DecisionType.TEXT,
@@ -79,6 +82,11 @@ class MyHarness(BaseHarness):
         )
 
     async def on_result(self, req):
+        # Battery: a session that has ended must report status="completed"
+        # (test_5_11 session_status_completed) — flip it before returning END.
+        session = self._sessions.get(req.session_id)
+        if session is not None:
+            session["status"] = "completed"
         return Decision(decision=DecisionType.END, end=End(reason="task_complete"))
 
     def get_session_info(self, session_id: str) -> dict | None:
@@ -186,10 +194,10 @@ pip install git+https://github.com/get-h3/shim
 h3-test --endpoint http://localhost:9191   # exit 0 = compliant
 ```
 
-The Quickstart harness above implements all four conventions and is fully
+The Quickstart harness above implements all five conventions and is fully
 battery-compliant (**46/46**). If you modify it, keep the conventions intact —
 a naive harness that drops them scores **40/46** (measured against a harness
-with no history echo, no session tracking, and no streaming flag). The four
+with no history echo, no session tracking, and no streaming flag). The five
 conventions the battery checks (beyond "return a Decision") are:
 
 1. **Echo `context.history` in every Decision returned from `on_process`.**
@@ -218,9 +226,16 @@ conventions the battery checks (beyond "return a Decision") are:
    (`test_5_10 session_not_found`) and asserts a 404. Track sessions in the
    harness (`get_session_info` returning `None` for unknown ids) — the router
    turns that into the 404.
+5. **Report `status="completed"` once the session ends.** The battery drives
+   process → result round-trips until your harness returns an `end` decision,
+   then GETs the session (`test_5_11 session_status_completed`) and asserts
+   `status="completed"`. This is only asserted when your harness emits a
+   `status` field at all — a harness whose `get_session_info` omits `status`
+   passes. Track it explicitly: set `"status": "active"` when the session
+   starts and flip it to `"completed"` when `on_result` returns `end`.
 
 The canonical battery-ready template is **[echo.py](src/h3_harness/examples/echo.py)**
-— it implements all four conventions and scores 46/46. Use it as the starting
+— it implements all five conventions and scores 46/46. Use it as the starting
 point for your own harness.
 
 ## Error handling
