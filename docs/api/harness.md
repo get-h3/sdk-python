@@ -68,7 +68,7 @@ implementation returns:
 ```python
 HealthResponse(
     status=HealthStatus.OK,
-    version="1.0.0",
+    version=__version__,  # h3_harness.__version__ (src/h3_harness/_version.py)
     transport="rest",
     protocol_version="1.0",
     uptime_seconds=int(time.time() - self._started_at),
