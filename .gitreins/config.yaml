@@ -33,10 +33,42 @@ guards:
 # headroom. Applied as a PROBE to unblock: the next eval records its own total,
 # and the settled rung is the smallest one that completes with no cap line —
 # do not re-ladder from the symptom (see skill gitreins-cap-sizing).
+#  3. 2026-09-19 (tick #300, GAP-057): SETTLED at 2M — the 8M probe above is
+#     stepped down to the measured need. 2M covers the only completing sample
+#     (1,380,265 input tokens = 1.38x the old 1M rung) with 1.45x headroom, and
+#     a SECOND completed sample is taken at this rung by the GAP-057 lifecycle
+#     eval itself (its token total lands in this comment once the run returns).
+#     Iterations and time do NOT move with it: the binding driver in run
+#     bc9aaac8 was the criterion (iteration cap at 100.2 used, 39% of the token
+#     rung), not the budget.
+#     The context-growth valve is NOT configurable into usefulness at a rung of
+#     this size, and that is measured rather than assumed. The engine fires
+#     compaction when the LARGEST SINGLE PROMPT crosses
+#     `compaction_threshold x max_input_tokens` (engine/evaluator.py:
+#     `threshold_ratio = evaluator_cfg.get("compaction_threshold", 0.90)`
+#     compared against `cumulative_prompt_tok = max(cumulative_prompt_tok,
+#     prompt_tok)`; its own regression tests pin that semantics —
+#     tests/test_evaluator.py::test_compaction_threshold_config_override feeds a
+#     600-token SINGLE call against a 1000-token cap at threshold 0.50, and
+#     ::test_compaction_threshold_not_triggered_below shows 400 tokens against a
+#     10000 cap NOT firing). The counter the CAP enforces is the SUM over calls
+#     (engine/eval_cap.py `record_llm_call` -> `cumulative_input_tokens +=
+#     all_input`), so at 2M/0.90 a single prompt would have to exceed 1.8M tokens
+#     while this repo's measured peak single prompt is ~46K (P0=3,831 + 1,064
+#     tokens/call over the 41-call run, tick #299 spy). The threshold that WOULD
+#     fire at that peak is 0.023 at a 2M rung and 0.006 at 8M — a magic number
+#     read off one task's growth law, and one that makes the valve thrash (a
+#     tool-heavy run adding ~5K tokens/call crosses a 46K trigger in ~5 calls and
+#     burns the engine's 3-compaction allowance before the first criterion is
+#     verified). So the counter growth is ACCEPTED and bounded by the rung
+#     instead: settle the rung from a measured sample and keep criteria bounded.
+#     The engine-side fix — comparing the metered cumulative counter, the
+#     quantity the cap actually enforces — belongs to gitreins, not to this
+#     repo's config (handed off as GR-GAP-062).
 evaluator:
   max_iterations: 100
   max_time: 20m
-  max_input_tokens: 8M
+  max_input_tokens: 2M
   max_output_tokens: 0.4M
   tool_call_weight: 0.1
   fast_track: auto
