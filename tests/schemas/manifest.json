@@ -1,0 +1,19 @@
+{
+  "cancel-request.json": "42c6fbde8ce8dee3c8160616d53a1dc980f86b8d0c09b1867dd7a7806cd3ae18",
+  "cancel-response.json": "acabc621f2a6066fa7d5e4511b6fdc4f9aba7baed9f21c1a666a0ed1f0cb73a3",
+  "common.json": "eec781bb47f8bf59a6cad89b6a0f55a36c284c75bbddaa944562bdc13c2dd2f1",
+  "decision.json": "e1f483e3a6a5b371826930d73dce94f637a09a2e7b1d8317eac9476499caca41",
+  "delegate.json": "2330cf96270e56a8f3c96778830eca050a8cd4b7a717012133cb143459dcb94c",
+  "end.json": "67f565ed39c396f7d00f86175bcb112e47315df0b567e6fd29afb0072da36cbf",
+  "error-response.json": "1a3006aca77b4c67ca548fda581a04ad2b1cfe262a8de340527cd92229d81f74",
+  "health-response.json": "95b4a829feb5e210f3b9bfc3bce75cbc8117f4341575e775ae572a920720cd91",
+  "llm-call.json": "f9acae0624d9affe60febc5f5ca0c3ee8b7036a04e1a347a85c63633ef88b5f0",
+  "process-request.json": "d9ab609bf154180fd8abb6a2de8d8744f16400ef453042cdc98216dbb5cd2d86",
+  "result-request.json": "ee2de228e86911c69275ddf27b743ea34c1bef91ba2dddc6fb342ce7ebaff896",
+  "session-response.json": "5fbd2fa010860f924470a0fa66a82b9096d219d8e7390bc00fb21bf03065c5f3",
+  "session-terminate-response.json": "cdd7353c35646426376a86462df793f720a468687fd3d95260ae2a8eff8d1a82",
+  "test-report.json": "71f20d567c78b1a6cdc16fafb1b2b5b3cdfbfe15fcbcc9df442542432cd8f0fb",
+  "text-response.json": "bf144abbf72d0b3f3a452fab9ef9ae508afeefcb4814ebe5b5dd629c69e40f61",
+  "tool-call.json": "e0a92c29cbf60465749751ae7ee7ce596a67209210efcecfa3bf92e5c9076ab1",
+  "wait.json": "c8284a3b5a6ec0e86664be030e13defba3a85639f438947e9c3809e3aef9b883"
+}
