@@ -19,6 +19,12 @@ build/
 # __init__.py files, which hatchling's gitignore-based wheel file selection
 # then excluded from built wheels (empty namespace package on install).
 /_*.py
+# GitReins guard logs (local run output)
+/.gitreins/logs/
+
+# Hilo reconcile marker (local cache metadata)
+/.vfs/graph/.last_reconcile
+
 # GitReins verdict history (local)
 .gitreins/history/
 .gitreins/usage.jsonl
