@@ -169,7 +169,7 @@ Response from `GET /v1/health` — harness health status.
 |---|---|---|---|
 | `status` | `str` | required | `"ok"`, `"degraded"`, or `"down"` (see `HealthStatus`). |
 | `version` | `str` | required | Harness version. |
-| `active_sessions` | `int \| None` | `None` | Number of active sessions, if tracked. |
+| `active_sessions` | `int \| None` | `None` | Number of active sessions. The base harness fills this from the router's live session tracking; `None` when the harness tracks no sessions. |
 | `capabilities` | `list[str] \| None` | `None` | Advertised capabilities (see `Capability`). |
 | `degraded_reason` | `str \| None` | `None` | Why the harness is degraded. |
 | `error` | `str \| None` | `None` | Error detail if unhealthy. |

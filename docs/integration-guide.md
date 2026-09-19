@@ -185,7 +185,7 @@ curl http://localhost:9191/v1/health
 ```
 
 ```json
-{"status":"ok","version":"0.1.5","active_sessions":null,"capabilities":["tool_call","llm_call","text","wait","delegate","end"],"degraded_reason":null,"error":null,"protocol_version":"1.0","transport":"rest","uptime_seconds":5}
+{"status":"ok","version":"0.1.5","active_sessions":0,"capabilities":["tool_call","llm_call","text","wait","delegate","end"],"degraded_reason":null,"error":null,"protocol_version":"1.0","transport":"rest","uptime_seconds":5}
 ```
 
 ### Send a message: `POST /v1/process`

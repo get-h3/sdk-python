@@ -58,6 +58,22 @@ class BaseHarness(ABC):
 
     _started_at: float = 0.0
 
+    # Router-side session liveness (session_id -> "active" | "completed"),
+    # populated by create_router on the session lifecycle endpoints.
+    #
+    # The class default MUST be None, never a `{}` literal: a dict on the class
+    # is shared by every instance (cross-instance state leak). The dict is
+    # lazily created inside _track_session, mirroring the _started_at lazy-init
+    # in health() so subclasses that never call super().__init__() (GAP-025)
+    # still work.
+    #
+    # Deliberately NOT named `_sessions`: the shipped examples (README
+    # quickstart, examples/echo.py, examples/minimal.py) and most adopter
+    # harnesses already use `_sessions` for their own get_session_info
+    # metadata dicts. Writing status strings into that name clobbers the
+    # metadata and makes GET /v1/sessions/{id} fail on `info.get(...)`.
+    _live_sessions: dict[str, str] | None = None
+
     def __init__(self) -> None:
         self._started_at = time.time()
 
@@ -90,6 +106,69 @@ class BaseHarness(ABC):
         """
         return None
 
+    def _track_session(self, session_id: str, status: str = "active") -> None:
+        """Record/update session liveness. Never raises.
+
+        Called by ``create_router`` on POST /v1/process, POST /v1/result and
+        DELETE /v1/sessions/{session_id}. Safe when ``__init__`` was never
+        called: the tracking dict is lazily created here, exactly like
+        ``_started_at`` is lazily initialised in :meth:`health`.
+        """
+        try:
+            if not session_id:
+                return
+            tracked = self._live_sessions
+            if not isinstance(tracked, dict):
+                tracked = {}
+                self._live_sessions = tracked
+            tracked[session_id] = status
+        except Exception:  # pragma: no cover - defensive: never fail a request
+            logger.exception("_track_session failed for %s", session_id)
+
+    def _session_is_active(self, session_id: str) -> bool:
+        """Cross-check a tracked session against ``get_session_info``.
+
+        A harness that reports the session as missing or ``"completed"``
+        disagrees with the router's own tracking (the examples flip to
+        ``"completed"`` in ``on_result``), so it must not be counted. A
+        harness that raises from ``get_session_info`` keeps its tracked value.
+        """
+        get_info = getattr(self, "get_session_info", None)
+        if get_info is None:
+            return True
+        try:
+            info = get_info(session_id)
+        except Exception:
+            logger.exception("get_session_info failed for %s", session_id)
+            return True
+        if info is None:
+            return False
+        if isinstance(info, dict):
+            if info.get("status") == SessionStatus.COMPLETED.value:
+                return False
+        return True
+
+    def active_session_count(self) -> int | None:
+        """Number of live (tracked, not completed) sessions.
+
+        Returns ``None`` ONLY when the harness tracks nothing at all: no
+        session has ever been seen AND ``get_session_info`` is not
+        implemented. Untracked harnesses therefore keep the historical
+        ``active_sessions: null`` health payload. Every other harness reports
+        an integer — ``0`` when it tracks sessions but none are live.
+        """
+        tracked = self._live_sessions
+        if not isinstance(tracked, dict) or not tracked:
+            return 0 if hasattr(self, "get_session_info") else None
+        count = 0
+        for session_id, status in tracked.items():
+            if status != "active":
+                continue
+            if not self._session_is_active(session_id):
+                continue
+            count += 1
+        return count
+
     def health(self) -> HealthResponse:
         """Return harness health status. Override for custom health logic."""
         # GAP-025: quickstart subclasses may never call super().__init__(), so
@@ -100,6 +179,7 @@ class BaseHarness(ABC):
         return HealthResponse(
             status=HealthStatus.OK,
             version=__version__,
+            active_sessions=self.active_session_count(),
             transport="rest",
             protocol_version="1.0",
             uptime_seconds=int(time.time() - self._started_at),
@@ -150,6 +230,22 @@ def _session_status(value: object) -> SessionStatus:
     return SessionStatus.ACTIVE
 
 
+def _track(harness: BaseHarness, session_id: str, status: str) -> None:
+    """Best-effort session-liveness update from the router.
+
+    Guarded with ``hasattr``: a harness that overrides these routes or never
+    calls ``super().__init__()`` must not turn a request into a 500 because of
+    tracking, so this is a silent no-op for harnesses without the hook.
+    """
+    tracker = getattr(harness, "_track_session", None)
+    if tracker is None:
+        return
+    try:
+        tracker(session_id, status)
+    except Exception:  # pragma: no cover - defensive: never fail a request
+        logger.exception("session tracking failed for %s", session_id)
+
+
 def create_router(harness: BaseHarness, *, prefix: str = "") -> APIRouter:
     """Create a FastAPI router wired to the given harness.
 
@@ -180,13 +276,17 @@ def create_router(harness: BaseHarness, *, prefix: str = "") -> APIRouter:
     )  # noqa: E501
     async def process(req: ProcessRequest) -> Decision:
         try:
-            return await harness.on_process(req)
+            decision = await harness.on_process(req)
         except Exception as exc:
             logger.exception("on_process failed")
-            return Decision(
+            decision = Decision(
                 decision=DecisionType.END,
                 end=End(reason=EndReason.ERROR, summary=str(exc)),
             )
+        # DF-H3-SDK-PYTHON-FOREMAN-5: a message makes the session live. The
+        # response is returned unchanged (the error decision above included).
+        _track(harness, req.session_id, "active")
+        return decision
 
     # ── POST /v1/result ──────────────────────────────────────────
     @router.post(
@@ -194,13 +294,17 @@ def create_router(harness: BaseHarness, *, prefix: str = "") -> APIRouter:
     )  # noqa: E501
     async def result(req: ResultRequest) -> Decision:
         try:
-            return await harness.on_result(req)
+            decision = await harness.on_result(req)
         except Exception as exc:
             logger.exception("on_result failed")
-            return Decision(
+            decision = Decision(
                 decision=DecisionType.END,
                 end=End(reason=EndReason.ERROR, summary=str(exc)),
             )
+        # An END decision closes the session; any other decision keeps it live.
+        status = "completed" if decision.decision == DecisionType.END else "active"
+        _track(harness, req.session_id, status)
+        return decision
 
     # ── POST /v1/cancel ──────────────────────────────────────────
     @router.post("/v1/cancel")
@@ -257,6 +361,8 @@ def create_router(harness: BaseHarness, *, prefix: str = "") -> APIRouter:
                 if info is None:
                     raise HTTPException(status_code=404, detail="Session not found")
             await harness.on_session_terminate(session_id)
+            # DF-H3-SDK-PYTHON-FOREMAN-5: a terminated session is no longer live.
+            _track(harness, session_id, "completed")
             return {"session_id": session_id, "terminated": True}
         except HTTPException:
             raise

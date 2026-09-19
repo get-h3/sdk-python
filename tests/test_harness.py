@@ -469,3 +469,200 @@ async def test_mock_cancel_default_reason():
     mock = MockHermes(EchoHarness())
     confirmed = await mock.cancel()
     assert confirmed is True
+
+
+# ── GET /v1/health: active_sessions ─────────────────────────────────
+# DF-H3-SDK-PYTHON-FOREMAN-5: the base health() used to leave
+# active_sessions null even while sessions were live, which reads as a bug.
+# The router now tracks session liveness and health() reports the count.
+
+
+class StaleSessionHarness(BaseHarness):
+    """get_session_info disagrees with the router's live tracking.
+
+    ``reported`` stands in for whatever an adopter's get_session_info returns
+    for the tracked session: a dict marked ``"completed"``, or ``None``
+    (already forgotten). Neither may be counted as live.
+    """
+
+    def __init__(self, reported: dict | None) -> None:
+        super().__init__()
+        self._reported = reported
+
+    async def on_process(self, req):
+        return Decision(
+            decision=DecisionType.TEXT,
+            text=TextResponse(content=f"Echo: {req.message.content}", finished=True),
+        )
+
+    async def on_result(self, req):
+        return Decision(
+            decision=DecisionType.END,
+            end=End(reason=EndReason.TASK_COMPLETE.value),
+        )
+
+    def get_session_info(self, session_id: str) -> dict | None:
+        return self._reported
+
+
+class KeepAliveHarness(BaseHarness):
+    """on_result keeps the session live (returns TEXT, never END)."""
+
+    async def on_process(self, req):
+        return Decision(
+            decision=DecisionType.TEXT,
+            text=TextResponse(content=f"Echo: {req.message.content}", finished=True),
+        )
+
+    async def on_result(self, req):
+        return Decision(
+            decision=DecisionType.TEXT,
+            text=TextResponse(content="more work to do", finished=True),
+        )
+
+
+class RaisingProcessHarness(BaseHarness):
+    """on_process always raises — the router must still track without 500ing."""
+
+    async def on_process(self, req):
+        raise RuntimeError("boom")
+
+    async def on_result(self, req):
+        return Decision(
+            decision=DecisionType.END,
+            end=End(reason=EndReason.TASK_COMPLETE.value),
+        )
+
+
+def test_health_active_sessions_null_when_untracked(client):
+    """Backward compatibility: no get_session_info and no traffic → null."""
+    body = client.get("/v1/health").json()
+    assert body["active_sessions"] is None
+
+
+def test_health_active_sessions_counts_live_session(client):
+    r = client.post("/v1/process", json=_process_body())
+    assert r.status_code == 200
+    assert r.json()["decision"] == "text"
+    assert client.get("/v1/health").json()["active_sessions"] == 1
+
+
+def test_health_active_sessions_zero_after_end(client):
+    assert client.post("/v1/process", json=_process_body()).status_code == 200
+    assert client.get("/v1/health").json()["active_sessions"] == 1
+
+    r = client.post("/v1/result", json=_result_body())
+    assert r.status_code == 200
+    assert r.json()["decision"] == "end"
+    assert client.get("/v1/health").json()["active_sessions"] == 0
+
+
+def test_health_active_sessions_counts_each_session_once(client):
+    first = _process_body()
+    second = _process_body()
+    second["session_id"] = "s-2"
+    assert client.post("/v1/process", json=first).status_code == 200
+    assert client.post("/v1/process", json=first).status_code == 200  # same id again
+    assert client.post("/v1/process", json=second).status_code == 200
+    assert client.get("/v1/health").json()["active_sessions"] == 2
+
+
+def test_health_active_sessions_non_end_result_keeps_session_active():
+    app = FastAPI()
+    app.include_router(create_router(KeepAliveHarness()))
+    c = TestClient(app)
+
+    assert c.post("/v1/process", json=_process_body()).status_code == 200
+    r = c.post("/v1/result", json=_result_body())
+    assert r.status_code == 200
+    assert r.json()["decision"] == "text"
+    assert c.get("/v1/health").json()["active_sessions"] == 1
+
+
+@pytest.mark.parametrize("reported", [{"status": "completed"}, None])
+def test_health_active_sessions_not_counted_when_session_info_disagrees(reported):
+    """A session get_session_info reports as completed/forgotten is not live."""
+    app = FastAPI()
+    app.include_router(create_router(StaleSessionHarness(reported)))
+    c = TestClient(app)
+
+    assert c.post("/v1/process", json=_process_body()).status_code == 200
+    assert c.get("/v1/health").json()["active_sessions"] == 0
+
+
+def test_health_active_sessions_zero_after_terminate(client_tracking):
+    body = _process_body()
+    body["session_id"] = "sess-tracked"
+    assert client_tracking.post("/v1/process", json=body).status_code == 200
+    assert client_tracking.get("/v1/health").json()["active_sessions"] == 1
+
+    r = client_tracking.delete("/v1/sessions/sess-tracked")
+    assert r.status_code == 200
+    assert client_tracking.get("/v1/health").json()["active_sessions"] == 0
+
+
+def test_health_active_sessions_unchanged_by_cancel(client_tracking):
+    """POST /v1/cancel leaves the session active — it is not a completed one."""
+    body = _process_body()
+    body["session_id"] = "sess-tracked"
+    cancel = _cancel_body()
+    cancel["session_id"] = "sess-tracked"
+    assert client_tracking.post("/v1/process", json=body).status_code == 200
+
+    r = client_tracking.post("/v1/cancel", json=cancel)
+    assert r.status_code == 200
+    assert client_tracking.get("/v1/health").json()["active_sessions"] == 1
+
+
+def test_health_active_sessions_zero_when_get_session_info_has_no_sessions():
+    """A tracking harness with no traffic reports 0, not null."""
+    app = FastAPI()
+    app.include_router(create_router(SessionTrackingHarness()))
+    c = TestClient(app)
+    assert c.get("/v1/health").json()["active_sessions"] == 0
+
+
+def test_health_and_process_without_super_init():
+    """GAP-025 pattern: no super().__init__() → tracking must lazy-init."""
+    app = FastAPI()
+    app.include_router(create_router(QuickstartHarness()))
+    c = TestClient(app)
+
+    r = c.get("/v1/health")
+    assert r.status_code == 200
+    assert r.json()["active_sessions"] is None
+
+    r = c.post("/v1/process", json=_process_body())
+    assert r.status_code == 200
+    assert c.get("/v1/health").json()["active_sessions"] == 1
+
+
+def test_session_tracking_is_not_shared_between_instances():
+    """The class-level default must stay None — no cross-instance leakage."""
+    assert BaseHarness._live_sessions is None
+
+    first = EchoHarness()
+    second = EchoHarness()
+    app = FastAPI()
+    app.include_router(create_router(first))
+    c = TestClient(app)
+
+    assert c.post("/v1/process", json=_process_body()).status_code == 200
+    assert first.health().active_sessions == 1
+    assert second.health().active_sessions is None
+    assert "_live_sessions" not in vars(second)
+    # The instance wrote its own dict; the class attribute is untouched.
+    assert BaseHarness._live_sessions is None
+    assert first._live_sessions == {"s-1": "active"}
+
+
+def test_process_tracks_session_even_when_on_process_raises():
+    app = FastAPI()
+    app.include_router(create_router(RaisingProcessHarness()))
+    c = TestClient(app)
+
+    r = c.post("/v1/process", json=_process_body())
+    assert r.status_code == 200
+    assert r.json()["decision"] == "end"
+    assert r.json()["end"]["reason"] == "error"
+    assert c.get("/v1/health").json()["active_sessions"] == 1

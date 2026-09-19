@@ -14,7 +14,7 @@
 #   battery=46   the get-h3/shim compliance battery (`h3-test`): every "N/N
 #                compliant" / "N tests, 6 categories" claim in this repo is
 #                about this number.
-#   suite=157    this repo's own pytest suite, as counted by
+#   suite=<N>    this repo's own pytest suite, as counted by
 #                `python -m pytest --collect-only -q`.
 #
 # Checks:

@@ -287,7 +287,7 @@ Decision(decision=DecisionType.END, end=End(reason=EndReason.TASK_COMPLETE))
 |---|---|---|---|
 | `status` | `str` | yes | `"ok"` (`HealthStatus`: `ok` / `degraded` / `down`) |
 | `version` | `str` | yes | the SDK version (`0.1.5`, from `_version.py`) |
-| `active_sessions` | `int \| None` | no | `None` (not set by default) |
+| `active_sessions` | `int \| None` | no | live session count from router tracking; `None` only when the harness tracks no sessions |
 | `capabilities` | `list[str] \| None` | no | `list(Capability)` — all six decision types |
 | `degraded_reason` | `str \| None` | no | `None` |
 | `error` | `str \| None` | no | `None` |
@@ -295,8 +295,12 @@ Decision(decision=DecisionType.END, end=End(reason=EndReason.TASK_COMPLETE))
 | `transport` | `str \| None` | no | `"rest"` |
 | `uptime_seconds` | `int \| None` | no | seconds since `__init__` (lazily initialised) |
 
-Override `health()` to report `degraded`/`down`, populate `active_sessions`, or
-add your own fields.
+Override `health()` to report `degraded`/`down` or add your own fields. The
+base implementation already populates `active_sessions` from the router's
+session tracking: `POST /v1/process` marks a session live, an `END` decision
+from `POST /v1/result` (or `DELETE /v1/sessions/{id}`) marks it completed, and
+`active_sessions` is `None` only for a harness that tracks no sessions at all
+(no traffic and no `get_session_info`).
 
 ### `SessionResponse` — `GET /v1/sessions/{session_id}`
 
