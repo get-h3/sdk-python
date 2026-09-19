@@ -274,3 +274,34 @@ delete-then-get case. Fix direction: document the contract in README with a
 content drift). Repo gates at time of run: 145/145 pytest (3.69s), ruff 0,
 board 51/51 complete, CI release-readiness green — all while the shipped wheel
 lacked a completed fix.
+
+## 8. 2026-09-19 — Tool-calling is where the docs run out (GAP-064/065/066)
+
+**How it was tested this time:** PyPI 0.1.5 in a throwaway venv on the control
+host (real consumer, 6s install) + a fresh clone of HEAD a7be001 on an
+ephemeral bunker agent (`make install` 25s, RC 0, no sudo, no missing deps —
+first run where the from-scratch leg ran on a *bare* Debian 13 with Python
+3.13 and needed zero host workarounds).
+
+**The pattern worth naming:** every prior dogfood validated the TEXT happy
+path (echo + battery). This run built a TOOL-CALLING consumer and immediately
+hit an undocumented wire contract: required `identity` and
+`context.config/session_state`, flat response shape, `ToolCall.params`
+(not `arguments`), `result` as a raw dict, and the propose/execute/result
+split where the harness never runs the tool itself. None of these break the
+battery (the shim drives them correctly), which is exactly why the docs
+drifted: the spec-conformant client is the test battery, not a human.
+
+**Second pattern: error masking hides integration bugs.** A consumer-side
+validation error (`ToolCall(arguments=...)`) surfaces as HTTP 200
+`end(reason=error)` with the cause only in `end.summary`/server stderr.
+Battery-friendly, human-hostile. Filed as GAP-065 (document + optional
+debug_errors re-raise).
+
+**Stability data point:** 4th consecutive SHIPPABLE verdict (08-23, 09-01,
+09-04, 09-19). The board's own GAP-061 still stands — PyPI 0.1.5 wheel is a
+content snapshot of an older tree (harness.py 267 lines vs repo 373), so
+"user installs from PyPI" and "user installs from HEAD" get different
+libraries at the same version number. My consumer ran on the stale wheel and
+still worked; the tool-calling friction would be identical either way since
+both predate the docs.

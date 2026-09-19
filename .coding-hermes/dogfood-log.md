@@ -129,3 +129,4 @@ foreman NOT woken (cooldown 21600 is an operator pin in ~/.hermes/fleet.toml L24
 next natural tick picks the tasks up).
 2026-09-01 | SHIPPABLE | 15s t2fs | friction 6 | 5 findings
 2026-09-04 | SHIPPABLE | 17s t2fs | friction 7 | 5 findings
+2026-09-19 | SHIPPABLE (4th consecutive) | 18min t2fs (text happy path ~5min; tool-calls cost 3 doc-driven dead ends) | friction 7 | 4 findings (GAP-064, GAP-065, GAP-066, DF-6 install evidence) | install bunker=las-bunker-03 agent=481fdc79 head=a7be001 install_seconds=25 smoke=ok | promise: build an H3 harness from README alone — held for echo, failed for tool-calls until wire contract reverse-engineered.

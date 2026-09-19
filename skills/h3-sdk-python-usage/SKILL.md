@@ -24,10 +24,27 @@ to over HTTP. Compliance is enforced by the official test battery
 
 ## Install
 
-**Last verified: 2026-08-23** (dogfood run: fresh venv `pip install h3-harness-sdk`
-→ 0.1.3, import OK, verbatim quickstart + testbed run, from-scratch harness
-battery PASS — BUT the 0.1.3 wheel is content-stale for GAP-035, see
-pitfalls).
+**Last verified: 2026-09-19** (dogfood run: fresh venv `pip install h3-harness-sdk`
+→ 0.1.5 from PyPI, import OK; real consumer todo-harness with tool-calls built
+end-to-end; fresh bunker clone of HEAD a7be001 + `make install` RC 0 in 25s on
+bare Debian 13 / Python 3.13 — see docs/dogfood/2026-09-19-integration.md).
+
+## Wire contract quick facts (learned the hard way, 2026-09-19)
+
+- POST /v1/process requires: `identity` `{user_id, chat_id, platform}` AND
+  `context` with `config` + `session_state` (both may be `{}`). Missing any → 422.
+- Responses are FLAT: `decision` is a string discriminator, payload fields sit
+  at top level (`resp["text"]["content"]`, NOT `resp["decision"]["text"]`).
+- `ToolCall(name=..., params=..., reasoning=...)` — there is no
+  `arguments`/`call_id`. Wrong kwargs → Pydantic error → router masks it into
+  HTTP 200 `{"decision":"end","end":{"reason":"error","summary":...}}`;
+  the cause is in `end.summary` and server logs.
+- `ResultRequest.result` arrives in `on_result` as a RAW DICT (the exported
+  `ResultPayload` model is not applied) — use `req.result.get("data", {})`.
+- The harness NEVER executes tools: `on_process` only proposes the tool_call;
+  the caller executes and POSTs /v1/result; apply tool effects in `on_result`.
+
+## Install checklist
 
 1. **✅ `pip install h3-harness-sdk`** — the package IS published on PyPI
    (0.1.3, released 2026-08-13 with the GAP-019/025/029 + MockHermes
