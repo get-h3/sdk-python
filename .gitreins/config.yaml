@@ -13,10 +13,30 @@ guards:
   # allow_skips accepts zero-work runs as PASS; lanes still run and still fail
   # the commit whenever a source/test file IS staged. See foreman tick #294.
   allow_skips: true
+# Escalation history — tier-2 rung, measured (foreman tick #299, 2026-09-19):
+#   1. 2026-09-18 df-h3-sdk-python-foreman-1 (docs + live-verification
+#      criterion: README Quickstart extracted verbatim, run under uvicorn, the
+#      46-test battery re-run) returned tier1 PASS + tier2 INCOMPLETE =
+#      "Partial verdict — evaluation hit resource cap before all criteria
+#      verified" at 1,039,907 input tokens against the then-1M rung.
+#   2. 2026-09-19 the SAME task and criteria were re-run instrumented (tier-2
+#      token spy): 41 LLM calls, last iteration 40/50, peak counter 1,029,521
+#      -> "Input token budget (1.0M) exceeded (1.0M used)", tier1 PASS, zero
+#      compactions (no valve is configured, so the counter only ever grows),
+#      wall clock 170s. Fitted growth law: P0=3,831 + 1,064 tokens/call, i.e.
+#      total(N calls) = N*P0 + 1064*N*(N-1)/2 -> projections N=50: 1.49M,
+#      N=100: 5.65M.
+# Two starvations at the SAME rung license exactly one raise, sized from the
+# measurement instead of from the verdict text: a 100-iteration budget projects
+# 5.65M, so 8M covers the whole iteration budget with ~1.4x headroom, and 20m
+# covers the measured 4.2s/iteration (~7 min at 100 iterations) with ~3x
+# headroom. Applied as a PROBE to unblock: the next eval records its own total,
+# and the settled rung is the smallest one that completes with no cap line —
+# do not re-ladder from the symptom (see skill gitreins-cap-sizing).
 evaluator:
-  max_iterations: 50
-  max_time: 10m
-  max_input_tokens: 1M
+  max_iterations: 100
+  max_time: 20m
+  max_input_tokens: 8M
   max_output_tokens: 0.4M
   tool_call_weight: 0.1
   fast_track: auto
@@ -34,7 +54,9 @@ pipeline:
       type: ai_eval
       on: [pre-eval]
       condition: "true"
-      max_iterations: 50
+      # MIN(top-level evaluator, this stage) gates every knob, so this value must
+      # move with evaluator.max_iterations or the raise above buys nothing.
+      max_iterations: 100
       tools: [read_file, run_command, search_pattern, read_diff, sandbox, detect_dead_code]
 
 defaults:
