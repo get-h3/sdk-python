@@ -33,14 +33,22 @@ guards:
 # headroom. Applied as a PROBE to unblock: the next eval records its own total,
 # and the settled rung is the smallest one that completes with no cap line —
 # do not re-ladder from the symptom (see skill gitreins-cap-sizing).
-#  3. 2026-09-19 (tick #300, GAP-057): SETTLED at 2M — the 8M probe above is
-#     stepped down to the measured need. 2M covers the only completing sample
-#     (1,380,265 input tokens = 1.38x the old 1M rung) with 1.45x headroom, and
-#     a SECOND completed sample is taken at this rung by the GAP-057 lifecycle
-#     eval itself (its token total lands in this comment once the run returns).
-#     Iterations and time do NOT move with it: the binding driver in run
-#     bc9aaac8 was the criterion (iteration cap at 100.2 used, 39% of the token
-#     rung), not the budget.
+#  3. 2026-09-19 (tick #300, GAP-057): the rung is settled by MEASUREMENT, and
+#     the measurement fell the OTHER way from the guess. The 8M probe was
+#     stepped down to 2M and the step-down was TESTED on this task's own
+#     lifecycle eval: it STARVED — verdict 7d19e63e, 2,030,197 input tokens,
+#     "Input token budget (2.0M) exceeded (2.0M used)", tier1 PASS. Note where it
+#     died: the judge had already verified clauses (a) and (c) of the criterion,
+#     so the eval was a fraction past the rung (a second reason to distrust the
+#     probe value). The rung is therefore set to 4M — the smallest value that
+#     covers BOTH measured samples (the docs sample, 1,380,265 = verdict
+#     827a214f, no cap line; and the starved 2M run, 2,030,197) with 1.3x
+#     headroom — and re-measured in this same tick; the settling verdict's id and
+#     token total are recorded on board row GAP-057 and in the board audit event.
+#     Iterations (100) and time (20m) do NOT move with the token rung: run
+#     bc9aaac8 proved the iteration knob already sufficient (it died at
+#     'Iteration cap (100) reached (100.2 used)' while using 39% of the token
+#     rung), i.e. the criterion, not the budget, was the driver in that run.
 #     The context-growth valve is NOT configurable into usefulness at a rung of
 #     this size, and that is measured rather than assumed. The engine fires
 #     compaction when the LARGEST SINGLE PROMPT crosses
@@ -53,10 +61,11 @@ guards:
 #     ::test_compaction_threshold_not_triggered_below shows 400 tokens against a
 #     10000 cap NOT firing). The counter the CAP enforces is the SUM over calls
 #     (engine/eval_cap.py `record_llm_call` -> `cumulative_input_tokens +=
-#     all_input`), so at 2M/0.90 a single prompt would have to exceed 1.8M tokens
+#     all_input`), so at 4M/0.90 a single prompt would have to exceed 3.6M tokens
 #     while this repo's measured peak single prompt is ~46K (P0=3,831 + 1,064
-#     tokens/call over the 41-call run, tick #299 spy). The threshold that WOULD
-#     fire at that peak is 0.023 at a 2M rung and 0.006 at 8M — a magic number
+#     tokens/call over the 41-call run, tick #299 spy) = 77.6x below the trigger.
+#     The ratio that WOULD fire at that peak is 0.012 at a 4M rung and 0.006 at
+#     8M — a magic number
 #     read off one task's growth law, and one that makes the valve thrash (a
 #     tool-heavy run adding ~5K tokens/call crosses a 46K trigger in ~5 calls and
 #     burns the engine's 3-compaction allowance before the first criterion is
@@ -68,7 +77,7 @@ guards:
 evaluator:
   max_iterations: 100
   max_time: 20m
-  max_input_tokens: 2M
+  max_input_tokens: 4M
   max_output_tokens: 0.4M
   tool_call_weight: 0.1
   fast_track: auto
