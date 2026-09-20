@@ -1,9 +1,16 @@
 # `h3_harness.examples` — Shipped Examples
 
 Three runnable harness examples ship inside the package under
-`src/h3_harness/examples/`. Each defines a `BaseHarness` subclass and, when
-run as a script, boots a uvicorn server on `http://0.0.0.0:8000` with the
-router and logging middleware attached.
+`src/h3_harness/examples/`. Each defines a `BaseHarness` subclass, exposes a
+module-level `app`, and, when run as a script, boots a uvicorn server with
+the router and logging middleware attached. Default ports (what each example
+binds when run as a script):
+
+- `echo.py` → **9191** (the h3-test battery port — `h3-test --endpoint
+  http://localhost:9191` works against it out of the box; an optional argv
+  argument overrides it, e.g. `python echo.py 8000`)
+- `minimal.py` → **8000**
+- `langchain_agent.py` → **8000**
 
 | File | Harness class | Demonstrates |
 |---|---|---|

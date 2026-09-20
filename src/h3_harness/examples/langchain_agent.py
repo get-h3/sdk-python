@@ -10,12 +10,12 @@ Battery-compliant (passes the full h3-test battery, currently 46/46):
   - echoes context.history in every Decision
   - tracks sessions so unknown ids 404 (get_session_info)
 
-Run (requires LangChain):
-    pip install langchain langchain-openai
+Run (self-contained — no LangChain install needed; the module imports no
+langchain, the model call is delegated over the H3 protocol):
     python src/h3_harness/examples/langchain_agent.py
     # → Server at http://0.0.0.0:8000
     #   GET  /v1/health  → harness health
-    #   POST /v1/process → triggers the LangChain pipeline
+    #   POST /v1/process → triggers the agent pipeline
 """
 
 from __future__ import annotations
@@ -132,11 +132,16 @@ class LangChainHarness(BaseHarness):
         return self._sessions.get(session_id)
 
 
+# ── App ────────────────────────────────────────────────────────────
+# Module-level `app` so the example can be served directly with
+# `uvicorn h3_harness.examples.langchain_agent:app` (README Examples section).
+app = FastAPI()
+app.include_router(create_router(LangChainHarness()))
+add_middleware(app)
+
+
 # ── Run ────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     import uvicorn
 
-    app = FastAPI()
-    app.include_router(create_router(LangChainHarness()))
-    add_middleware(app)
     uvicorn.run(app, host="0.0.0.0", port=8000)

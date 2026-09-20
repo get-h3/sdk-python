@@ -3,11 +3,15 @@
 The H3 compliance gate is the test battery (``hermes-h3-shim``:
 ``h3-test --endpoint <url>``, 46 tests across 6 categories, exit 0 =
 compliant). This runner serves the canonical 46/46 template
-(``h3_harness.examples.echo.EchoHarness``) on the battery port so CI and
-local developers can verify compliance without touching the example:
-``echo.py`` builds its app only inside ``if __name__ == "__main__":`` and
-binds 0.0.0.0:9191 by default, which ``uvicorn h3_harness.examples.echo:...``
-cannot serve directly (EchoHarness is a harness class, not a FastAPI app).
+(``h3_harness.examples.echo.EchoHarness``) on the battery port (9191) so CI
+and local developers can verify compliance without touching the example.
+
+``echo.py`` itself exposes a module-level ``app`` and serves the same
+battery port by default, so ``uvicorn h3_harness.examples.echo:app`` also
+works (README Examples section); this wrapper is not required for
+compliance. CI keeps it as the pinned battery server: loopback-only bind,
+quiet uvicorn logging, and a stable entry point independent of example
+changes.
 """
 
 import uvicorn
