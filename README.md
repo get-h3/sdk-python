@@ -174,13 +174,18 @@ works:
 # uvicorn against the module-level app (any port)
 uvicorn h3_harness.examples.echo:app --port 9191
 uvicorn h3_harness.examples.minimal:app --port 8000
+uvicorn h3_harness.examples.langchain_agent:app --port 8000
 
-# or the built-in runner (echo.py accepts an optional port argument)
+# or the built-in runner (echo.py accepts an optional port argument;
+# its default is the battery port 9191, the other two default to 8000)
 python -m h3_harness.examples.echo 9191
 python -m h3_harness.examples.minimal
+python -m h3_harness.examples.langchain_agent
 ```
 
-`langchain_agent.py` additionally requires `pip install langchain langchain-openai`.
+`langchain_agent.py` needs no extra installs — despite the name it imports no
+langchain: the "LLM" is a hardcoded stand-in and the example demonstrates the
+protocol pattern for delegating reasoning to an external LLM pipeline.
 
 ## Passing the battery (h3-test compliance)
 
@@ -306,7 +311,7 @@ make generate  # regenerate src/h3_harness/protocol.py from JSON Schema
 ```
 
 **Running tests:** use the project venv — `make install` then `.venv/bin/pytest`
-(194 tests). Bare `pytest` on an ambient interpreter may fail to import
+(200 tests). Bare `pytest` on an ambient interpreter may fail to import
 `h3_harness`; `pytest.ini`'s `pythonpath = src` covers collection from the
 source tree without an install, but the project venv is the supported path.
 
