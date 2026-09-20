@@ -125,6 +125,65 @@ class BaseHarness(ABC):
         except Exception:  # pragma: no cover - defensive: never fail a request
             logger.exception("_track_session failed for %s", session_id)
 
+    def _tracked_session_status(self, session_id: str) -> str | None:
+        """Raw router-tracked status string for ``session_id``, else ``None``.
+
+        The single read of ``_live_sessions``: ``session_status()`` and
+        ``active_session_count()`` both go through here, so the two surfaces
+        that answer "is this session live?" (GET /v1/sessions/{id} and
+        GET /v1/health) can never read the router's tracking differently.
+        """
+        tracked = self._live_sessions
+        if not isinstance(tracked, dict):
+            return None
+        value = tracked.get(session_id)
+        return value if isinstance(value, str) else None
+
+    def session_status(self, session_id: str) -> SessionStatus | None:
+        """Router-tracked status for ``session_id``, or ``None``.
+
+        ``None`` means the router has NEVER tracked this session id: no
+        ``POST /v1/process``, ``POST /v1/result`` or
+        ``DELETE /v1/sessions/{id}`` ever carried it. It is NOT a statement
+        about the harness's own session store — ``get_session_info`` remains
+        the authority for session metadata and for 404s.
+
+        When the router has tracked the id, the status is the one written on
+        the lifecycle endpoint: ``ACTIVE`` from ``POST /v1/process``,
+        ``COMPLETED`` once ``POST /v1/result`` returns an ``end`` decision or
+        ``DELETE /v1/sessions/{id}`` runs, else ``ACTIVE`` again.
+
+        A tracked value the router itself would not have written (a harness
+        writing its own strings into ``_live_sessions``) is reported as
+        ``None`` — the "never tracked anything usable" answer, so callers
+        keep their historical default instead of echoing junk.
+        """
+        raw = self._tracked_session_status(session_id)
+        if raw is None:
+            return None
+        try:
+            return SessionStatus(raw)
+        except ValueError:
+            return None
+
+    def _resolve_status(self, session_id: str, info: object) -> SessionStatus | None:
+        """THE shared liveness resolution behind both surfaces (GAP-058).
+
+        Order: an explicit, valid status stated by the harness's
+        ``get_session_info`` dict wins (GAP-035) → else the router's own
+        tracking via :meth:`session_status` → else ``None``, meaning "nothing
+        usable anywhere" and each caller applies its own historical default
+        (``GET /v1/sessions/{id}`` uses ACTIVE; health counts the session as
+        not live).
+
+        ``GET /v1/sessions/{id}`` and ``active_session_count()`` both call
+        this, so the two answers to "is this session live?" cannot drift.
+        """
+        status = _harness_status(info.get("status")) if isinstance(info, dict) else None
+        if status is None:
+            status = self.session_status(session_id)
+        return status
+
     def _session_is_active(self, session_id: str) -> bool:
         """Cross-check a tracked session against ``get_session_info``.
 
@@ -132,10 +191,16 @@ class BaseHarness(ABC):
         disagrees with the router's own tracking (the examples flip to
         ``"completed"`` in ``on_result``), so it must not be counted. A
         harness that raises from ``get_session_info`` keeps its tracked value.
+
+        GAP-058: the status decision is :meth:`_resolve_status` — the SAME
+        resolution ``GET /v1/sessions/{id}`` reports — so the count and the
+        reported status cannot disagree. Two rules outrank it: a harness that
+        reports the session as MISSING (``None``) is never counted, and one
+        that raises keeps its tracked value.
         """
         get_info = getattr(self, "get_session_info", None)
         if get_info is None:
-            return True
+            return self._resolve_status(session_id, None) is SessionStatus.ACTIVE
         try:
             info = get_info(session_id)
         except Exception:
@@ -143,10 +208,7 @@ class BaseHarness(ABC):
             return True
         if info is None:
             return False
-        if isinstance(info, dict):
-            if info.get("status") == SessionStatus.COMPLETED.value:
-                return False
-        return True
+        return self._resolve_status(session_id, info) is SessionStatus.ACTIVE
 
     def active_session_count(self) -> int | None:
         """Number of live (tracked, not completed) sessions.
@@ -161,12 +223,13 @@ class BaseHarness(ABC):
         if not isinstance(tracked, dict) or not tracked:
             return 0 if hasattr(self, "get_session_info") else None
         count = 0
-        for session_id, status in tracked.items():
-            if status != "active":
-                continue
-            if not self._session_is_active(session_id):
-                continue
-            count += 1
+        for session_id in list(tracked):
+            # GAP-058: liveness comes from the SAME resolution
+            # GET /v1/sessions/{id} reports (_session_is_active ->
+            # _resolve_status), so the count and the reported status cannot
+            # disagree. A tracked-but-not-active session is simply not live.
+            if self._session_is_active(session_id):
+                count += 1
         return count
 
     def health(self) -> HealthResponse:
@@ -222,12 +285,25 @@ def _session_status(value: object) -> SessionStatus:
     back to ACTIVE — the pre-GAP-035 contract and the safe default for
     harnesses that don't track status at all.
     """
+    resolved = _harness_status(value)
+    return resolved if resolved is not None else SessionStatus.ACTIVE
+
+
+def _harness_status(value: object) -> SessionStatus | None:
+    """Resolve a harness-provided status value, or ``None`` when unusable.
+
+    GAP-058 splits the GAP-035 behaviour in two: ``None`` means the harness
+    stated nothing usable — the key is absent, not a string, or not a
+    recognised :class:`SessionStatus` — and the caller decides the fallback
+    (``GET /v1/sessions/{id}`` consults the router's own tracking, then
+    ACTIVE). An explicit valid value is passed through unchanged.
+    """
     if isinstance(value, str):
         try:
             return SessionStatus(value)
         except ValueError:
-            pass
-    return SessionStatus.ACTIVE
+            return None
+    return None
 
 
 def _track(harness: BaseHarness, session_id: str, status: str) -> None:
@@ -332,20 +408,38 @@ def create_router(harness: BaseHarness, *, prefix: str = "") -> APIRouter:
             info = harness.get_session_info(session_id)  # type: ignore[union-attr]
             if info is None:
                 raise HTTPException(status_code=404, detail="Session not found")
+            # GAP-058: ONE source of truth for liveness. An explicit, valid
+            # status in the harness dict still wins (GAP-035); when the dict
+            # states nothing usable — key absent, or an unrecognised value —
+            # fall back to the router's own tracking (the same value
+            # GET /v1/health counts), and only then to the historical ACTIVE.
+            # Without this a no-status harness (the AGENTS.md quickstart)
+            # reported "active" forever while /v1/health counted it as not
+            # live.
+            status = harness._resolve_status(  # type: ignore[union-attr]
+                session_id, info
+            )
+            if status is None:
+                status = SessionStatus.ACTIVE
             return SessionResponse(
                 session_id=session_id,
                 started_at=_iso_timestamp(info.get("started_at")),
                 last_active=_iso_timestamp(info.get("last_active")),
                 turn_count=info.get("turn_count", 0),
-                status=_session_status(info.get("status")),
+                status=status,
             )
-        # Default: no session tracking — always return ACTIVE.
+        # Default: no session tracking — the router's own tracking when it
+        # has any, else ACTIVE (the historical answer for an endpoint that
+        # cannot see sessions at all). Same resolution as the branch above.
+        status = harness._resolve_status(session_id, None)
+        if status is None:
+            status = SessionStatus.ACTIVE
         return SessionResponse(
             session_id=session_id,
             started_at="",
             last_active="",
             turn_count=0,
-            status=SessionStatus.ACTIVE,
+            status=status,
         )
 
     # ── DELETE /v1/sessions/{session_id} ─────────────────────────

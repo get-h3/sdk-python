@@ -230,9 +230,15 @@ conventions the battery checks (beyond "return a Decision") are:
    process → result round-trips until your harness returns an `end` decision,
    then GETs the session (`test_5_11 session_status_completed`) and asserts
    `status="completed"`. This is only asserted when your harness emits a
-   `status` field at all — a harness whose `get_session_info` omits `status`
-   passes. Track it explicitly: set `"status": "active"` when the session
-   starts and flip it to `"completed"` when `on_result` returns `end`.
+   `status` field at all — and since GAP-058 the router supplies the status
+   itself when your `get_session_info` omits it (it tracks the session's own
+   lifecycle: `active` after a process call, `completed` once `on_result`
+   returns `end`), so a metadata-only `get_session_info` passes too. If you do
+   emit `status`, keep it truthful: set `"status": "active"` when the session
+   starts and flip it to `"completed"` when `on_result` returns `end` — an
+   explicit valid status always wins over the router's tracking, so a stale
+   `"active"` left there is what the wire reports, and `GET /v1/health`
+   (`active_sessions`) counts the very same value.
 
 The canonical battery-ready template is **[echo.py](src/h3_harness/examples/echo.py)**
 — it implements all five conventions and scores 46/46. Use it as the starting
@@ -291,8 +297,10 @@ shape is `ResultPayload`; see `docs/api/protocol.md`.
 
 `GET /v1/sessions/{id}` reports session status: `"active"` (default) or
 `"completed"`. Harnesses that track lifecycle return a `status` key from
-`get_session_info` (`"completed"` once the loop reaches `end`) and the
-router passes it through.
+`get_session_info` (`"completed"` once the loop reaches `end`) and the router
+passes it through; harnesses that don't get the router's own tracking instead
+(`"completed"` once `on_result` returns `end`), so `status` and the
+`active_sessions` count in `GET /v1/health` always agree.
 
 ## Development
 
@@ -306,7 +314,7 @@ make generate  # regenerate src/h3_harness/protocol.py from JSON Schema
 ```
 
 **Running tests:** use the project venv — `make install` then `.venv/bin/pytest`
-(194 tests). Bare `pytest` on an ambient interpreter may fail to import
+(204 tests). Bare `pytest` on an ambient interpreter may fail to import
 `h3_harness`; `pytest.ini`'s `pythonpath = src` covers collection from the
 source tree without an install, but the project venv is the supported path.
 

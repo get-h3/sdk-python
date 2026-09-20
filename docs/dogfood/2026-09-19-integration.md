@@ -37,11 +37,11 @@ curl -s -X POST :9191/v1/process -H 'Content-Type: application/json' -d '{
 
 ```python
 # 2. harness side: propose, never execute
-return Decision(decision=DecisionType.TOOL_CALL,
-                tool_call=ToolCall(name="add_todo",
-                                   params={"item": msg},
-                                   reasoning="user asked"),
-                history=list(req.context.history))
+return Decision(
+    decision=DecisionType.TOOL_CALL,
+    tool_call=ToolCall(name="add_todo", params={"item": msg}, reasoning="user asked"),
+    history=list(req.context.history),
+)
 ```
 
 ```bash

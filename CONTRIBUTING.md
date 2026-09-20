@@ -47,7 +47,7 @@ sdk-python/
 
 ```bash
 make test          # uv run pytest -x --tb=short -q
-# 194 tests
+# 204 tests
 ```
 
 ### Run Lint + Format Check
@@ -122,14 +122,14 @@ prompts, and 404 unknown sessions.
 ```bash
 make lint          # uv run ruff check src/ tests/
 make fmt           # uv run ruff format src/ tests/ (then re-check)
-make test          # uv run pytest -x --tb=short -q (194 tests)
+make test          # uv run pytest -x --tb=short -q (204 tests)
 ```
 
 ### CI Pipeline
 
 GitHub Actions runs on every PR:
 1. Lint (ruff)
-2. Tests (pytest, 194 tests)
+2. Tests (pytest, 204 tests)
 3. `h3-test --endpoint http://localhost:9191` (against echo example — 46/46 battery)
 
 All must pass.
@@ -148,7 +148,7 @@ living doc references an older version).
 
 ## Review Checklist
 
-- [ ] `make test` passes (194 tests)
+- [ ] `make test` passes (204 tests)
 - [ ] `make lint` passes
 - [ ] `h3-test --endpoint http://localhost:9191` passes against echo example (46/46)
 - [ ] New Pydantic fields use `Optional` where appropriate

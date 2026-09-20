@@ -170,6 +170,13 @@ h3-test --endpoint http://127.0.0.1:9191        # 46/46 + exit 0 = compliant
   pass-through only exists in repo HEAD (GAP-035, GAP-043). If your harness
   sets `status: "completed"` and the wire says `"active"`, that's the wheel,
   not your bug.
+- **Do** expect a harness whose `get_session_info` carries no `status` key to
+  still report `completed` after an `end` decision on repo HEAD since GAP-058:
+  the router falls back to its own per-session tracking
+  (`BaseHarness.session_status`), the same source `GET /v1/health`
+  (`active_sessions`) counts, so the two surfaces agree. An explicit valid
+  `status` in the dict still wins — a stale `"active"` left there is what the
+  wire reports.
 - **Do** override `on_session_terminate` to actually drop session state if you
   track sessions — the base implementation is a no-op, so `DELETE
   /v1/sessions/{id}` returns `{"terminated":true}` while `GET` still returns

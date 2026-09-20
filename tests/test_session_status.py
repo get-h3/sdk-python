@@ -3,9 +3,12 @@
 The router used to hardcode ``status=active`` on every session response.
 Since GAP-035 it reads the ``status`` key from the harness's
 ``get_session_info`` dict and validates it against ``SessionStatus``
-("active"/"completed"/"expired"/"cancelled"); unknown or invalid values fall
-back to ACTIVE, and harnesses that return no status key at all keep getting
-ACTIVE (backward compatible — the pre-GAP-035 contract).
+("active"/"completed"/"expired"/"cancelled"). Since GAP-058 an unknown,
+invalid or absent value is not the end of the story: it falls back to the
+router's OWN per-session tracking (``BaseHarness.session_status``) — the same
+source ``GET /v1/health`` counts — and only then to ACTIVE, which is what a
+harness the router has never tracked still gets. See
+``tests/test_session_health_parity.py`` for the pair-agreement tests.
 """
 
 from __future__ import annotations
