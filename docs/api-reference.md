@@ -300,7 +300,9 @@ base implementation already populates `active_sessions` from the router's
 session tracking: `POST /v1/process` marks a session live, an `END` decision
 from `POST /v1/result` (or `DELETE /v1/sessions/{id}`) marks it completed, and
 `active_sessions` is `None` only for a harness that tracks no sessions at all
-(no traffic and no `get_session_info`).
+(no traffic and no `get_session_info`). The count and the `status` reported by
+`GET /v1/sessions/{id}` are resolved by the SAME rule
+(`BaseHarness.session_status`), so they never disagree.
 
 ### `SessionResponse` — `GET /v1/sessions/{session_id}`
 
@@ -310,12 +312,16 @@ from `POST /v1/result` (or `DELETE /v1/sessions/{id}`) marks it completed, and
 | `started_at` | `str` | ISO-8601. Populated from `get_session_info()["started_at"]`; epoch numbers are coerced, `""` when absent. |
 | `last_active` | `str` | Same handling as `started_at`. |
 | `turn_count` | `int` | From `get_session_info()["turn_count"]`, default `0`. |
-| `status` | `str` | `active` / `completed` / `expired` / `cancelled` (`SessionStatus`); unknown values fall back to `active`. |
+| `status` | `str` | `active` / `completed` / `expired` / `cancelled` (`SessionStatus`). An unrecognised value falls back to the router's own tracking, then to `active`. |
 | `current_decision` | `str \| None` | Present in the model; not populated by the router (`null`). |
 | `current_decision_type` | `str \| None` | Present in the model; not populated by the router (`null`). |
 
-Without `get_session_info`, the router always returns
-`status="active"`, `started_at=""`, `last_active=""`, `turn_count=0`.
+`status` is the same value `GET /v1/health` counts, so a no-status harness
+(`get_session_info` without a `status` key) reports `completed` with
+`active_sessions: 0` once `POST /v1/result` returns an `end` decision — never
+one each way. Without `get_session_info`, the router returns `started_at=""`,
+`last_active=""`, `turn_count=0`, and `status` from its own tracking (else
+`active`).
 
 ### Error models
 
@@ -347,6 +353,7 @@ split:
 | `on_session_terminate` | optional override | `async def on_session_terminate(self, session_id: str) -> None` | no-op |
 | `health` | optional override | `def health(self) -> HealthResponse` | `ok` payload above |
 | `get_session_info` | **duck-typed — not on the ABC** | `def get_session_info(self, session_id: str) -> dict \| None` | absent → router reports every session as `active` and never 404s |
+| `session_status` | public read accessor | `def session_status(self, session_id: str) -> SessionStatus \| None` | router-tracked liveness for one session; `None` when the router never tracked it |
 | `__init__` | optional | `def __init__(self) -> None` | call `super().__init__()` to record `_started_at` (uptime); `health()` lazily initialises it anyway |
 
 `get_session_info` may return the keys `started_at`, `last_active`,

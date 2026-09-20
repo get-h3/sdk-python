@@ -34,6 +34,27 @@ define their own `__init__`.
 | `on_cancel` | optional override | `async def on_cancel(self, req: CancelRequest) -> bool` | `True` (base) |
 | `on_session_terminate` | optional override | `async def on_session_terminate(self, session_id: str) -> None` | `None` (base, no-op) |
 | `health` | optional override | `def health(self) -> HealthResponse` | Default health payload (below) |
+| `session_status` | public read accessor | `def session_status(self, session_id: str) -> SessionStatus \| None` | Router-tracked liveness, `None` when never tracked |
+
+### `session_status(session_id: str) -> SessionStatus | None`
+
+The router's own per-session liveness, written by `create_router` on the
+session lifecycle endpoints and read by **both** liveness surfaces:
+
+| Endpoint | Written status |
+|---|---|
+| `POST /v1/process` | `active` |
+| `POST /v1/result` (an `end` decision) | `completed` |
+| `POST /v1/result` (anything else) | `active` |
+| `POST /v1/cancel` | unchanged (a cancel is not an end) |
+| `DELETE /v1/sessions/{id}` | `completed` |
+
+`None` means the router has **never** tracked that session id — not that the
+session is absent from your harness. `get_session_info` remains the authority
+for session metadata and for the `404`s. `active_session_count()` (and
+therefore `GET /v1/health`) counts the sessions this returns `ACTIVE` for, so
+`GET /v1/health` and `GET /v1/sessions/{id}` always answer the same question
+the same way.
 
 ### `on_process(req: ProcessRequest) -> Decision` — abstract
 
@@ -87,11 +108,14 @@ def get_session_info(self, session_id: str) -> dict | None: ...
 ```
 
 then `GET /v1/sessions/{session_id}` will return real session metadata. The
-dict may contain keys `started_at`, `last_active`, and `turn_count` (used to
-populate `SessionResponse`); returning `None` makes the router answer `404`.
-Without this method, the router always reports the session as
-`SessionStatus.ACTIVE` with empty timestamps and `turn_count=0`. See
-`src/h3_harness/examples/echo.py` for a working implementation.
+dict may contain keys `started_at`, `last_active`, `turn_count`, and `status`
+(used to populate `SessionResponse`); returning `None` makes the router answer
+`404`. Without a usable `status` key, `status` comes from the router's own
+tracking (`session_status`) — the same value `GET /v1/health` counts — and
+`SessionStatus.ACTIVE` only when the router never saw the session either.
+Without this method, the router reports `SessionStatus.ACTIVE` with empty
+timestamps and `turn_count=0`. See `src/h3_harness/examples/echo.py` for a
+working implementation.
 
 ---
 
@@ -134,8 +158,11 @@ app.include_router(create_router(MyHarness(), prefix="/api"))
   `on_cancel` raises, the router logs `"on_cancel failed"` and raises
   `HTTPException(500, detail=str(exc))`.
 - **`GET /v1/sessions/{session_id}`** — uses `harness.get_session_info` if
-  present (see above); `404 "Session not found"` when it returns `None`;
-  otherwise a default `SessionResponse` with `SessionStatus.ACTIVE`.
+  present (see above); `404 "Session not found"` when it returns `None`.
+  `status` is the same value `GET /v1/health` counts: a valid `status` in the
+  `get_session_info` dict wins, else the router's own tracking
+  (`session_status(session_id)`, `active` after a process call, `completed`
+  once the loop ends), else `SessionStatus.ACTIVE`.
 - **`DELETE /v1/sessions/{session_id}`** — calls
   `await harness.on_session_terminate(session_id)` and returns
   `{"session_id": session_id, "terminated": True}`. If the hook raises, the

@@ -143,8 +143,10 @@ What each piece is for:
 - `on_process` / `on_result` are the **only required methods** (`BaseHarness` is
   an ABC — it cannot be instantiated without them).
 - `get_session_info` is **not** on the ABC, but the router duck-types it: with
-  it, unknown session ids 404 on `cancel` / `GET` / `DELETE`; without it every
-  session id looks valid and `GET` always reports `active`.
+  it, unknown session ids 404 on `cancel` / `GET` / `DELETE`; the `status` it
+  returns (when it is a valid `SessionStatus`) wins, otherwise the router falls
+  back to its own per-session tracking — so a metadata-only dict still reports
+  `completed` after the loop ends, matching `GET /v1/health`.
 - `on_session_terminate` is optional (base = no-op). Override it or a
   terminated session stays retrievable.
 - `history=list(req.context.history)` and `finished=not streaming` are the two
@@ -399,7 +401,7 @@ you want to diff your harness against a known 46/46 implementation:
 | `422` with `{"loc": ["body", "context"], "msg": "Field required"}` | Missing `context` | Send `context.config` **and** `context.session_state` (both required; `history`/`models`/`tools` default to `[]`). |
 | `404` on every `GET /v1/sessions/{id}` | No `get_session_info`... | ...or the session id was never seen by `on_process`. Implement `get_session_info` and key it on `req.session_id`. |
 | `{"detail":"Session not found"}` on `DELETE` | You deleted it, or the id is unknown | Expected for tracked harnesses; check the id. |
-| Session returns `{"status":"active"}` forever | No `get_session_info` | The router has no session store without it and always reports `active`. |
+| Session returns `{"status":"active"}` forever | Your `on_process`/`on_result` never end the session | The router reports the status it tracks: `active` until an `end` decision (or `DELETE /v1/sessions/{id}`) marks the session `completed`. A harness with no `get_session_info` at all keeps the historical `active`. |
 | The session just stops, HTTP 200, `{"decision":"end","end":{"reason":"error"}}` | Your `on_process`/`on_result` raised | Handler exceptions are masked as a *successful* `end/error` decision (the router logs `on_process failed`). Check the server log; `end.reason == "error"` is the only wire signal. |
 | `AttributeError: 'ResultRequest' object has no attribute 'context'` | Reading `req.context` in `on_result` | `ResultRequest` has only `decision_id`/`result`/`session_id`; omit `history` from `on_result` decisions. |
 | `406`/404 on `/health` | Endpoint is `/v1/health` | Use the `/v1/` prefix (or whatever `prefix=` you passed to `create_router`). |
