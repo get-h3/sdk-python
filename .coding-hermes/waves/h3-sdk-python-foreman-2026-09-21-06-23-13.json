@@ -1,0 +1,57 @@
+{
+  "tick_id": "h3-sdk-python-foreman-2026-09-21-06-23-13",
+  "project": "h3-sdk-python-foreman",
+  "started_at": "2026-09-21T06:35:00Z",
+  "finished_at": "2026-09-21T07:20:00Z",
+  "wave_budget": 6,
+  "base_sha": "0d4628a",
+  "workers": [
+    {
+      "task_id": "GAP-068",
+      "priority": "P2",
+      "band": "src+codegen+tests+docs(version refs)+ci(sweep source)",
+      "branch": "wt/GAP-068",
+      "worktree": "/home/kara/worktrees/sdk-python-GAP-068",
+      "commit_sha": "09b6596 (+4802b06 foreman tomllib-guard fix for the py3.10 CI leg)",
+      "merge_commit_sha": "see git log merge wt/GAP-068",
+      "judge": "tier2 FAIL INCOMPLETE — cross-merge artifact: sub-parts A/B/C (implementation, drift-guard, sweep source) judge-verified PASS; sub-part D (sweep green) graded the worktree where index.md was still 0.1.5. Foreman re-verified D on the MERGED tree: exact sweep job script exit 0, '9 living docs reference only version 0.1.6'; fresh-install __version__ == metadata == pyproject 0.1.6. Same-id re-run skipped (poisoned, #294/#296 precedent).",
+      "merge": "merged (1st — RELEASE-003 depends on its sweep direction)",
+      "absorbs": "RELEASE-001 (duplicate row, same drift, filed by releng-satellite 06:02) — dedup-closed",
+      "cost_usd": 0.0
+    },
+    {
+      "task_id": "RELEASE-003",
+      "priority": "P3",
+      "band": "docs/api/index.md only",
+      "branch": "wt/RELEASE-003",
+      "worktree": "/home/kara/worktrees/sdk-python-RELEASE-003",
+      "commit_sha": "5ca3070 (+02baaa6 foreman blockquote reword on main: version note names pyproject as the one authority)",
+      "judge": "PASS (verdict c2db2840, tier2 COMPLETE)",
+      "merge": "merged (2nd)",
+      "cost_usd": 0.0
+    },
+    {
+      "task_id": "RELEASE-002",
+      "priority": "P2",
+      "band": "CHANGELOG.md only",
+      "branch": "wt/RELEASE-002",
+      "worktree": "/home/kara/worktrees/sdk-python-RELEASE-002",
+      "commit_sha": "970b78a",
+      "judge": "PASS (verdict ef0671be, tier2 COMPLETE)",
+      "merge": "merged (3rd)",
+      "cost_usd": 0.0
+    }
+  ],
+  "foreman_direct": {
+    "scope": "GAP-068 worker-commit amendment 4802b06 (tomllib guard in the new test for py3.10); RELEASE-003 follow-through 02baaa6 (index.md blockquote reword); dedup-close RELEASE-001; board event + counts",
+    "commit_sha": "4802b06, 02baaa6"
+  },
+  "not_picked": {
+    "GAP-063": "P3 stale-prose inventory, multi-file, overlaps CONTRIBUTING/skills bands held by GAP-068 this tick",
+    "GAP-065": "P2 error-masking design row — needs its own design pass, not a wave band",
+    "GAP-066": "P3 wire-schema docs — overlaps docs/api-reference.md held by GAP-068 this tick",
+    "DF-H3-SDK-PYTHON-FOREMAN-6": "dated installability proof row, no action needed beyond GAP-062 (already closed)"
+  },
+  "gates": "pytest 215 passed/1 skipped (216 collected, count guard agrees); ruff check+format clean; check-test-count PASS; sweep job exit 0 on merged tree; fresh-install probe OK",
+  "result": "3/3 worker bands merged with --no-ff in dependency order; counts 94 rows (89 complete/5 pending) -> 97 rows (92 complete/5 pending); RELEASE-001 dedup-closed"
+}
