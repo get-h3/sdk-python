@@ -2,11 +2,12 @@
 
 Hand-written API reference for `h3-harness-sdk` **0.1.6** (package `h3_harness`).
 
-> Version note: the package version is sourced from a single place —
-> `src/h3_harness/_version.py` — and surfaced as `h3_harness.__version__`
-> (and `GET /v1/health` `version`). This doc must not hardcode a version
-> newer or older than `_version.py`; the CI `docs-version-sweep` job
-> (GAP-040) fails the build if it does.
+> Version note: the package version has ONE authority — the `[project]`
+> `version` in `pyproject.toml` (GAP-068). `h3_harness.__version__`
+> (and `GET /v1/health` `version`) derive from it at import time via
+> install metadata, falling back to the repo file in a source tree.
+> This doc must not assert a version older than the released package;
+> the CI `docs-version-sweep` job (GAP-040) fails the build if it does.
 
 This reference documents the public surface of the SDK exactly as implemented in
 `src/h3_harness/` at the time of writing. If anything here disagrees with a
