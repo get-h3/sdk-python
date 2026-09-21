@@ -258,6 +258,13 @@ class CancelRequest(BaseModel):
     session_id: str
 
 
+class CancelResponse(BaseModel):
+    """Response for POST /v1/cancel (200)."""
+
+    cancelled: bool
+    cancelled_decision_id: str | None
+
+
 class HealthResponse(BaseModel):
     """Response from GET /v1/health — harness health status."""
 

@@ -30,6 +30,7 @@ from fastapi.responses import JSONResponse
 from ._version import __version__
 from .protocol import (
     CancelRequest,
+    CancelResponse,
     Capability,
     Decision,
     DecisionType,
@@ -383,8 +384,12 @@ def create_router(harness: BaseHarness, *, prefix: str = "") -> APIRouter:
         return decision
 
     # ── POST /v1/cancel ──────────────────────────────────────────
-    @router.post("/v1/cancel")
-    async def cancel(req: CancelRequest):
+    # GAP-060: the body is typed by cancel-response.json, whose required set
+    # is exactly {cancelled, cancelled_decision_id}. session_id is NOT part of
+    # that contract, so it is not returned here; a consumer that validates the
+    # body against the schema must not receive extra prose.
+    @router.post("/v1/cancel", response_model=CancelResponse)
+    async def cancel(req: CancelRequest) -> CancelResponse:
         try:
             # Battery (test_5_9b cancel_unknown_session): cancelling a
             # nonexistent session must 404 when the harness tracks sessions.
@@ -393,7 +398,10 @@ def create_router(harness: BaseHarness, *, prefix: str = "") -> APIRouter:
                 if info is None:
                     raise HTTPException(status_code=404, detail="Session not found")
             confirmed = await harness.on_cancel(req)
-            return {"session_id": req.session_id, "cancelled": confirmed}
+            # The contract requires cancelled_decision_id but sanctions null
+            # (schema type ["string", "null"]): the base harness keeps no
+            # in-flight decision registry, so nothing was in flight to name.
+            return CancelResponse(cancelled=confirmed, cancelled_decision_id=None)
         except HTTPException:
             raise
         except Exception as exc:

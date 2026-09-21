@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import json
 import time
 from datetime import datetime
+from pathlib import Path
 
+import jsonschema
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -273,8 +276,33 @@ def test_cancel(client):
     r = client.post("/v1/cancel", json=_cancel_body())
     assert r.status_code == 200
     body = r.json()
-    assert body["session_id"] == "s-1"
+    # GAP-060: the body is the protocol's CancelResponse, not a bag of
+    # router-local fields. cancel-response.json requires exactly
+    # {cancelled, cancelled_decision_id} — session_id is NOT in the contract.
+    assert set(body) == {"cancelled", "cancelled_decision_id"}
     assert body["cancelled"] is True
+    assert body["cancelled_decision_id"] is None
+
+
+def test_cancel_body_matches_cancel_response_schema(client):
+    """GAP-060 PASS criterion: a live cancel body validates against the
+    vendored cancel-response.json — key presence included, which is what the
+    old ``{"session_id": ..., "cancelled": true}`` dict failed on
+    ('cancelled_decision_id is a required property')."""
+    r = client.post("/v1/cancel", json=_cancel_body())
+    assert r.status_code == 200
+
+    body = r.json()
+    # Assert the BODY, not the status: a 200 with a schema-invalid payload is
+    # exactly the defect this pins.
+    assert body["cancelled"] is True
+    assert "cancelled_decision_id" in body
+    assert body["cancelled_decision_id"] is None
+
+    schema_path = Path(__file__).resolve().parent / "schemas" / "v1"
+    schema = json.loads((schema_path / "cancel-response.json").read_text())
+    errors = list(jsonschema.Draft202012Validator(schema).iter_errors(body))
+    assert errors == [], [err.message for err in errors]
 
 
 def test_cancel_tracking_known_session_200(client_tracking):
