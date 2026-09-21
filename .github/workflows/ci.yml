@@ -252,6 +252,67 @@ jobs:
           print("OK: published wheel contains GAP-035 _session_status logic")
           EOF
 
+      # GAP-061: same-version content staleness, third occurrence of the class
+      # (0.1.3, 0.1.4, 0.1.5). The version compare above is version-only, and
+      # GAP-043's probe keys on one helper's source text — so a wheel cut from
+      # an older tree that still carries _session_status can stay green while
+      # the rest of the module is stale, and a FROZEN version number certifies
+      # nothing at all. The published 0.1.5 wheel is exactly that case: same
+      # version as repo HEAD, but a 267-line harness.py predating fea1855
+      # (live-session tracking), which repo HEAD carries.
+      # This step installs the PUBLISHED wheel at the version just fetched and
+      # asserts a symbol only the current HEAD harness defines, so a stale
+      # artifact fails the gate even when the version number matches. The
+      # version compare and the GAP-043 probe above are untouched (additive).
+      - name: Verify published artifact content at the published version (GAP-061)
+        run: |
+          VENV="$RUNNER_TEMP/gap061-venv"
+          PUBLISHED_VERSION="${{ steps.pypi.outputs.published }}"
+          echo "probing published artifact h3-harness-sdk==${PUBLISHED_VERSION}"
+
+          python -m venv "$VENV"
+
+          # Pin the version just fetched. A fresh publish can lag on the PyPI
+          # CDN for a few seconds, so retry before calling the artifact
+          # unavailable — but never fall back to an unpinned install, which
+          # could resolve to a different artifact than the one under gate.
+          installed=0
+          for attempt in $(seq 1 6); do
+            if "$VENV/bin/pip" install --quiet --no-cache-dir \
+                "h3-harness-sdk==${PUBLISHED_VERSION}"; then
+              installed=1
+              echo "installed h3-harness-sdk==${PUBLISHED_VERSION} on attempt ${attempt}"
+              break
+            fi
+            echo "attempt ${attempt}: install failed (CDN propagation?); retrying in 10s"
+            sleep 10
+          done
+          if [ "$installed" -ne 1 ]; then
+            echo "FAIL: could not install h3-harness-sdk==${PUBLISHED_VERSION} after 6 attempts — PyPI advertises the version but the artifact is not fetchable"
+            exit 1
+          fi
+
+          "$VENV/bin/python" - <<'EOF'
+          import sys
+
+          from h3_harness import BaseHarness
+
+          # One symbol, the live-session tracking marker from fea1855: absent
+          # from the published 0.1.5 wheel, present at repo HEAD.
+          MARKER = "active_session_count"
+
+          if not callable(getattr(BaseHarness, MARKER, None)):
+              print(
+                  "FAIL: published artifact is STALE at same version — "
+                  f"BaseHarness.{MARKER} is missing from the wheel on PyPI. "
+                  "The version number matches the repo but the content does "
+                  "not: the artifact predates the live-session tracking work. "
+                  "Rebuild from HEAD and publish again (uv build && uv publish)."
+              )
+              sys.exit(1)
+          print(f"OK: published artifact carries BaseHarness.{MARKER} — content is current")
+          EOF
+
   # GAP-040: docs-version-sweep gate — every release (0.1.1→0.1.2→0.1.3) has
   # produced a new stale-version GAP row (GAP-014, GAP-016, GAP-037-adjacent,
   # GAP-039) because no release checklist covered doc-version references.
