@@ -2,6 +2,26 @@
 
 All notable changes to the H3 Python SDK.
 
+## [0.1.6] — 2026-09-21
+
+### Added
+- `BaseHarness.active_session_count()` plus live session tracking — the
+  health endpoint's `active_sessions` is now populated from tracked
+  sessions, so session liveness has one source of truth across
+  `GET /v1/sessions` and `GET /v1/health`
+- Typed `CancelResponse` on `POST /v1/cancel`, matching the protocol's
+  cancel-response.json shape
+- Shipped examples' launch forms now match their documentation (echo and
+  minimal example fixes)
+
+### Changed
+- Release 0.1.6 published from HEAD as a content-fresh artifact (the
+  release bump touched `pyproject.toml` + `uv.lock`)
+
+Known drift: the published 0.1.6 wheel's self-reported version reads
+0.1.5 via `_version.py`; tracked as GAP-068 (fix in flight).
+
+
 ## [0.1.5] — 2026-08-31
 
 ### Added
