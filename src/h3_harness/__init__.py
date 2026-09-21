@@ -6,6 +6,7 @@ from .middleware import add_middleware
 from .protocol import (
     CancelReason,
     CancelRequest,
+    CancelResponse,
     Decision,
     DecisionType,
     Delegate,
@@ -34,6 +35,7 @@ __all__ = [
     "add_middleware",
     "CancelReason",
     "CancelRequest",
+    "CancelResponse",
     "Decision",
     "DecisionType",
     "Delegate",

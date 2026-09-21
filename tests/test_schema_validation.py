@@ -24,6 +24,7 @@ from pydantic import ValidationError
 from h3_harness.protocol import (
     CancelReason,
     CancelRequest,
+    CancelResponse,
     Capability,
     Config,
     Context,
@@ -80,29 +81,39 @@ def _build_store() -> dict:
     return store
 
 
-def validate_instance(instance: object, schema_name: str) -> None:
-    """Validate a Pydantic model instance against a named JSON Schema file.
-
-    Serializes the instance via model_dump(mode='json', exclude_none=True),
-    then validates against the schema with full $ref resolution.
-    """
-    schema = _load_schema(schema_name)
-    store = _build_store()
-
-    # Serialize to JSON-compatible dict
-    if hasattr(instance, "model_dump"):
-        data = instance.model_dump(mode="json", exclude_none=True)
-    else:
-        data = instance
-
-    # Use referencing.Registry for Draft 2020-12 $ref resolution
+def _registry():
+    """A referencing.Registry over every vendored schema, for $ref resolution."""
     from referencing import Registry, Resource
 
     registry = Registry()
-    for fname, s in store.items():
+    for fname, s in _build_store().items():
         registry = registry.with_resource(uri=fname, resource=Resource.from_contents(s))
+    return registry
 
-    validator = jsonschema.Draft202012Validator(schema, registry=registry)
+
+def validate_instance(
+    instance: object, schema_name: str, *, exclude_none: bool = True
+) -> None:
+    """Validate a Pydantic model instance against a named JSON Schema file.
+
+    Serializes the instance via model_dump(mode='json'), then validates against
+    the schema with full $ref resolution.
+
+    ``exclude_none`` defaults to True (the historical behaviour) because most
+    schemas here model optional fields. It must be False for a schema that
+    REQUIRES a nullable property — cancel-response.json requires
+    ``cancelled_decision_id``, so dropping the null key would validate a
+    payload the wire never sends.
+    """
+    schema = _load_schema(schema_name)
+
+    # Serialize to JSON-compatible dict
+    if hasattr(instance, "model_dump"):
+        data = instance.model_dump(mode="json", exclude_none=exclude_none)
+    else:
+        data = instance
+
+    validator = jsonschema.Draft202012Validator(schema, registry=_registry())
     errors = list(validator.iter_errors(data))
 
     if errors:
@@ -176,6 +187,38 @@ def test_result_request_validates_against_schema():
 def test_cancel_request_validates_against_schema():
     req = CancelRequest(session_id="s-1", reason="user_interrupt")
     validate_instance(req, "cancel-request.json")
+
+
+def test_cancel_response_validates_against_schema():
+    """GAP-060: the model the route returns satisfies cancel-response.json.
+
+    A cancelled in-flight decision carries its id; a cancel with nothing in
+    flight sends null — and null must survive as a present key
+    (``exclude_none=False``), because the schema requires the property.
+    """
+    resp = CancelResponse(cancelled=True, cancelled_decision_id=None)
+    validate_instance(resp, "cancel-response.json", exclude_none=False)
+
+    resp_with_id = CancelResponse(cancelled=True, cancelled_decision_id="d-42")
+    validate_instance(resp_with_id, "cancel-response.json", exclude_none=False)
+
+
+def test_cancel_response_requires_cancelled_decision_id():
+    """The contract's required set is exactly {cancelled,
+    cancelled_decision_id}: dropping the nullable id makes an otherwise valid
+    body schema-invalid, which is the GAP-060 defect in reverse."""
+    dumped = CancelResponse.model_construct(cancelled=True).model_dump(mode="json")
+    assert "cancelled_decision_id" not in dumped
+
+    schema = _load_schema("cancel-response.json")
+    errors = list(
+        jsonschema.Draft202012Validator(schema, registry=_registry()).iter_errors(
+            dumped
+        )
+    )
+    assert [err.message for err in errors] == [
+        "'cancelled_decision_id' is a required property"
+    ]
 
 
 def test_health_response_validates_against_schema():

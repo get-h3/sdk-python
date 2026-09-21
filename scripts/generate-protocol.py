@@ -86,6 +86,20 @@ def py_type_from_schema(prop: dict, defs: dict) -> str:
 
     t = prop.get("type", "string")
 
+    if isinstance(t, list):
+        # JSON Schema type union (e.g. ["string", "null"]). The null member is
+        # real wire information — CancelResponse.cancelled_decision_id is null
+        # when no operation was in flight — and is rendered by the field
+        # emitter as `| None`; the non-null members must agree on one base
+        # type, otherwise the property is deliberately untyped.
+        members = [member for member in t if member != "null"]
+        if len(members) == 1:
+            t = members[0]
+        elif not members:
+            return "None"
+        else:
+            return "Any"
+
     if "enum" in prop:
         return "str"
 
@@ -103,6 +117,19 @@ def py_type_from_schema(prop: dict, defs: dict) -> str:
     elif t == "object":
         return "dict[str, Any]"
     return "Any"
+
+
+def schema_type_allows_null(prop: dict) -> bool:
+    """True when a property's JSON Schema `type` union includes "null".
+
+    A required property may still be nullable — ``cancel-response.json``
+    requires ``cancelled_decision_id`` *and* types it ``["string", "null"]``,
+    because the reference emitter sends null when no operation was in flight.
+    Requiredness and nullability are independent facts and both must reach the
+    generated model.
+    """
+    t = prop.get("type")
+    return isinstance(t, list) and "null" in t
 
 
 # Fields that should default to empty/useful values even when JSON Schema
@@ -168,6 +195,10 @@ def generate_class(class_name: str, schema: dict, defs: dict) -> list[str]:
             lines.append(f"    {overrides[name]}")
         elif name in defaults:
             lines.append(f"    {name}: {ptype} = {defaults[name]}")
+        elif is_req and schema_type_allows_null(prop):
+            # Required by the contract, nullable on the wire: no default, so
+            # omitting the key is still a validation error for consumers.
+            lines.append(f"    {name}: {ptype} | None")
         elif is_req:
             lines.append(f"    {name}: {ptype}")
         else:
@@ -304,6 +335,7 @@ def generate_protocol(schema_dir: str) -> str:
         "ProcessRequest",
         "ResultRequest",
         "CancelRequest",
+        "CancelResponse",
         "HealthResponse",
         "ErrorResponse",
         "SessionResponse",
