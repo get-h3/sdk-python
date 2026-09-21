@@ -14,15 +14,22 @@ import importlib.util
 import re
 from pathlib import Path
 
-import tomllib
+try:
+    import tomllib  # Python >= 3.11
+except ImportError:  # Python 3.10 (CI matrix floor): no tomllib
+    tomllib = None
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VERSION_MODULE_PATH = REPO_ROOT / "src" / "h3_harness" / "_version.py"
 
 
 def _pyproject_version() -> str:
-    data = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-    return data["project"]["version"]
+    text = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    if tomllib is not None:
+        return tomllib.loads(text)["project"]["version"]
+    match = re.search(r'^version\s*=\s*["\']([^"\']+)["\']', text, re.MULTILINE)
+    assert match is not None, "pyproject.toml [project] version not found"
+    return match.group(1)
 
 
 def test_version_matches_pyproject():
