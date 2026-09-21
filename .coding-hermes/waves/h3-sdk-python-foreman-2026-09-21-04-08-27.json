@@ -1,0 +1,53 @@
+{
+  "tick_id": "h3-sdk-python-foreman-2026-09-21-04-08-27",
+  "project": "h3-sdk-python-foreman",
+  "started_at": "2026-09-21T04:20:00Z",
+  "finished_at": "2026-09-21T04:45:00Z",
+  "wave_budget": 4,
+  "base_sha": "8c895a2",
+  "workers": [
+    {
+      "task_id": "GAP-060",
+      "branch": "wt/GAP-060",
+      "worktree": "/home/kara/worktrees/sdk-python-GAP-060",
+      "commit_sha": "1fcd16d",
+      "merge_commit_sha": "403e0e0",
+      "judge": "PASS (verdict c8de33e4)",
+      "merge": "merged",
+      "cost_usd": 0.0,
+      "tokens_in": 0,
+      "tokens_out": 0
+    },
+    {
+      "task_id": "GAP-061",
+      "branch": "wt/GAP-061",
+      "worktree": "/home/kara/worktrees/sdk-python-GAP-061",
+      "commit_sha": "cb52a08",
+      "merge_commit_sha": "babc4fe",
+      "judge": "PASS (verdict b28ca310)",
+      "merge": "merged",
+      "cost_usd": 0.0,
+      "tokens_in": 0,
+      "tokens_out": 0
+    },
+    {
+      "task_id": "GAP-064",
+      "branch": "wt/GAP-064",
+      "worktree": "/home/kara/worktrees/sdk-python-GAP-064",
+      "commit_sha": "179865f",
+      "merge_commit_sha": "182f647",
+      "judge": "PASS (verdict d5549c48)",
+      "merge": "merged",
+      "cost_usd": 0.0,
+      "tokens_in": 0,
+      "tokens_out": 0
+    }
+  ],
+  "foreman_direct": {
+    "task_id": "GAP-061 (publish half)",
+    "scope": "pyproject 0.1.5->0.1.6, uv.lock, uv build + uv publish, tag v0.1.6, GH release v0.1.6",
+    "commit_sha": "c80f7d2"
+  },
+  "new_findings": ["GAP-068 (P2 — _version.py hardcodes the version, published 0.1.6 serves version:'0.1.5')"],
+  "result": "3/3 merged and reaped; release 0.1.6 published and tagged; all work pushed (origin/main..HEAD = 0)"
+}
