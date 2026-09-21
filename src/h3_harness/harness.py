@@ -219,11 +219,21 @@ class BaseHarness(ABC):
         implemented. Untracked harnesses therefore keep the historical
         ``active_sessions: null`` health payload. Every other harness reports
         an integer — ``0`` when it tracks sessions but none are live.
+
+        Session GC (DF4-H3-SHIM-2): entries that resolve not-live here — an
+        END result, a DELETE, or a harness that dropped its own record — are
+        pruned from ``_live_sessions`` so the dict and this scan stay bounded
+        by LIVE sessions instead of growing with every finished conversation.
+        The prune runs on this read rather than on the END write so the other
+        status reads keep resolving the ended session (GAP-058 parity: GET
+        /v1/sessions/{id} and session_status() still report ``completed``
+        until the next health read).
         """
         tracked = self._live_sessions
         if not isinstance(tracked, dict) or not tracked:
             return 0 if hasattr(self, "get_session_info") else None
         count = 0
+        ended: list[str] = []
         for session_id in list(tracked):
             # GAP-058: liveness comes from the SAME resolution
             # GET /v1/sessions/{id} reports (_session_is_active ->
@@ -231,6 +241,11 @@ class BaseHarness(ABC):
             # disagree. A tracked-but-not-active session is simply not live.
             if self._session_is_active(session_id):
                 count += 1
+            else:
+                ended.append(session_id)
+        if ended:
+            for session_id in ended:
+                tracked.pop(session_id, None)
         return count
 
     def health(self) -> HealthResponse:
