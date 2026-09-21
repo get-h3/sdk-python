@@ -318,8 +318,12 @@ jobs:
   # GAP-039) because no release checklist covered doc-version references.
   # This job fails CI when a scoped LIVING doc line that asserts a version
   # (contains "h3-harness-sdk", "h3_harness", "__version__", or
-  # "published version") references a version older than the package
-  # __version__ in src/h3_harness/_version.py — the single source of truth.
+  # "published version") references a version older than the release
+  # authority. Authority order (GAP-068): pyproject.toml [project] version
+  # is the single release authority and the sweep's PRIMARY source — the
+  # hardcoded _version.py module drifted from pyproject (0.1.6 published
+  # while the wire served "0.1.5") — with the __version__ regex in
+  # src/h3_harness/_version.py kept as a fallback for safety.
   # Historical records are excluded by scope: CHANGELOG.md (release history
   # is intentionally versioned) and docs/dogfood/** (dated incident records)
   # are never scanned. Hard gate on push to main and on PRs.
@@ -339,19 +343,39 @@ jobs:
           python - <<'EOF'
           import glob, re, sys
 
-          # Single source of truth: src/h3_harness/_version.py. Fall back to
-          # pyproject.toml if the module file is ever moved.
-          version_file = "src/h3_harness/_version.py"
-          m = None
+          # Release authority: pyproject.toml [project] version, read with
+          # tomllib (GAP-068). Fallback: the __version__ regex in
+          # src/h3_harness/_version.py (the module now derives its value at
+          # import time from install metadata / pyproject) — kept only for
+          # safety if pyproject.toml is ever unreadable or restructured.
+          current = None
           try:
-              m = re.search(r'__version__\s*=\s*["\']([^"\']+)["\']', open(version_file).read())
-          except FileNotFoundError:
-              m = None
-          if m is None:
               import tomllib
-              m = re.search(r"\d+\.\d+\.\d+", tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])
-              current = tuple(int(x) for x in m.group(0).split("."))
-          else:
+
+              pyproject_version = tomllib.load(open("pyproject.toml", "rb"))["project"]["version"]
+              m = re.search(r"\d+\.\d+\.\d+", pyproject_version)
+              if m is not None:
+                  current = tuple(int(x) for x in m.group(0).split("."))
+          except (ImportError, FileNotFoundError, KeyError, TypeError):
+              current = None
+          if current is None:
+              # Safety fallback: the __version__ regex in _version.py. The
+              # module derives its value dynamically now, so this matches
+              # only if a literal assignment is ever reintroduced;
+              # otherwise fail loudly — an unreadable pyproject.toml means
+              # the release authority itself is broken.
+              version_file = "src/h3_harness/_version.py"
+              try:
+                  m = re.search(r'__version__\s*=\s*["\']([^"\']+)["\']', open(version_file).read())
+              except FileNotFoundError:
+                  m = None
+              if m is None:
+                  print(
+                      "FAIL: cannot resolve current version — pyproject.toml "
+                      "unreadable and no literal __version__ in "
+                      "src/h3_harness/_version.py (GAP-068 authority order)"
+                  )
+                  sys.exit(2)
               current = tuple(int(x) for x in m.group(1).split("."))
           current_str = ".".join(str(x) for x in current)
 

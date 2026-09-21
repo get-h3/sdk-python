@@ -25,9 +25,11 @@ to over HTTP. Compliance is enforced by the official test battery
 ## Install
 
 **Last verified: 2026-09-19** (dogfood run: fresh venv `pip install h3-harness-sdk`
-→ 0.1.5 from PyPI, import OK; real consumer todo-harness with tool-calls built
-end-to-end; fresh bunker clone of HEAD a7be001 + `make install` RC 0 in 25s on
-bare Debian 13 / Python 3.13 — see docs/dogfood/2026-09-19-integration.md).
+→ 0.1.5 from PyPI — version current at that date; a later bump means re-verify
+with the current PyPI release. Import OK; real consumer todo-harness with
+tool-calls built end-to-end; fresh bunker clone of HEAD a7be001 + `make install`
+RC 0 in 25s on bare Debian 13 / Python 3.13 — see
+docs/dogfood/2026-09-19-integration.md).
 
 ## Wire contract quick facts (learned the hard way, 2026-09-19)
 

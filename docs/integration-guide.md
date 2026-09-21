@@ -2,7 +2,7 @@
 
 This guide takes you from nothing to a running H3 harness that passes the
 compliance battery (`h3-test`, **46 tests across 6 categories**). Every command
-and response below was run against `h3-harness-sdk` **0.1.5**; the harness in
+and response below was run against `h3-harness-sdk` **0.1.6**; the harness in
 [step 3](#3-write-your-first-harness) is the exact file that produced the
 transcripts — it scores **46/46 PASSED** (`h3-test` exit code `0`).
 
@@ -42,7 +42,7 @@ Verify:
 
 ```bash
 python -c "import h3_harness; print(h3_harness.__version__)"
-# 0.1.5
+# 0.1.6
 ```
 
 ### Install fallback (git / source)
@@ -187,7 +187,7 @@ curl http://localhost:9191/v1/health
 ```
 
 ```json
-{"status":"ok","version":"0.1.5","active_sessions":0,"capabilities":["tool_call","llm_call","text","wait","delegate","end"],"degraded_reason":null,"error":null,"protocol_version":"1.0","transport":"rest","uptime_seconds":5}
+{"status":"ok","version":"0.1.6","active_sessions":0,"capabilities":["tool_call","llm_call","text","wait","delegate","end"],"degraded_reason":null,"error":null,"protocol_version":"1.0","transport":"rest","uptime_seconds":5}
 ```
 
 ### Send a message: `POST /v1/process`
@@ -369,7 +369,7 @@ health,process` (run a subset), `--help` (full exit-code text).
 
 ## 6. Reach a battery-passing harness in <15 minutes
 
-1. `pip install h3-harness-sdk` and confirm `h3_harness.__version__` → `0.1.5`.
+1. `pip install h3-harness-sdk` and confirm `h3_harness.__version__` → `0.1.6`.
    *(1 min)*
 2. Save the step-3 `my_harness.py`. *(2 min)*
 3. `uvicorn my_harness:app --port 9191`, then
