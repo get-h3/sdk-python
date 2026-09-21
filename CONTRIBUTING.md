@@ -47,7 +47,7 @@ sdk-python/
 
 ```bash
 make test          # uv run pytest -x --tb=short -q
-# 213 tests
+# 216 tests
 ```
 
 ### Run Lint + Format Check
@@ -122,14 +122,14 @@ prompts, and 404 unknown sessions.
 ```bash
 make lint          # uv run ruff check src/ tests/
 make fmt           # uv run ruff format src/ tests/ (then re-check)
-make test          # uv run pytest -x --tb=short -q (213 tests)
+make test          # uv run pytest -x --tb=short -q (216 tests)
 ```
 
 ### CI Pipeline
 
 GitHub Actions runs on every PR:
 1. Lint (ruff)
-2. Tests (pytest, 213 tests)
+2. Tests (pytest, 216 tests)
 3. `h3-test --endpoint http://localhost:9191` (against echo example — 46/46 battery)
 
 All must pass.
@@ -142,13 +142,25 @@ git push origin v0.1.3
 # CI publishes to PyPI automatically
 ```
 
-Current published version: `0.1.5` (`h3-harness-sdk` on PyPI; single source
-`src/h3_harness/_version.py` — the CI `docs-version-sweep` job fails if a
-living doc references an older version).
+Current published version: `0.1.6` (`h3-harness-sdk` on PyPI; single source
+`pyproject.toml` `[project] version`, derived into `h3_harness.__version__`
+at import time — the CI `docs-version-sweep` job fails if a living doc
+references an older version).
+
+### Version bump checklist
+
+1. Bump `[project] version` in `pyproject.toml`.
+2. `uv lock` (refreshes the lockfile's own-package version).
+3. `src/h3_harness/_version.py` needs NO manual edit — it derives the
+   version at import time from installed metadata, falling back to
+   `pyproject.toml`.
+4. Add a `CHANGELOG.md` section for the new version.
+5. Update any docs version references in the same commit — the CI
+   `docs-version-sweep` job fails on a living doc that lags the release.
 
 ## Review Checklist
 
-- [ ] `make test` passes (213 tests)
+- [ ] `make test` passes (216 tests)
 - [ ] `make lint` passes
 - [ ] `h3-test --endpoint http://localhost:9191` passes against echo example (46/46)
 - [ ] New Pydantic fields use `Optional` where appropriate

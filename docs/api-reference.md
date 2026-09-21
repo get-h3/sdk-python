@@ -1,14 +1,16 @@
 # H3 Harness SDK for Python — API Reference
 
-Reference for `h3-harness-sdk` **0.1.5** (import package `h3_harness`): the HTTP
+Reference for `h3-harness-sdk` **0.1.6** (import package `h3_harness`): the HTTP
 surface your harness exposes, the request/response models it exchanges, and the
 `BaseHarness` methods you implement.
 
-> **Version note:** the package version is sourced from one place —
-> `src/h3_harness/_version.py` — and surfaced as `h3_harness.__version__` and in
-> the `GET /v1/health` `version` field. This document must never hardcode a
-> version other than that one; the CI `docs-version-sweep` job (GAP-040) fails
-> the build on drift.
+> **Version note:** the package version has ONE authority — `pyproject.toml`
+> (`[project] version`) — from which `src/h3_harness/_version.py` derives
+> `h3_harness.__version__` at import time (installed artifact metadata
+> first, pyproject fallback in a source tree), surfaced as
+> `h3_harness.__version__` and in the `GET /v1/health` `version` field.
+> This document must never hardcode a version other than that one; the CI
+> `docs-version-sweep` job (GAP-040) fails the build on drift.
 
 Everything below was read off the source in `src/h3_harness/`. Where a docstring
 and the code disagree, the code wins.
@@ -286,7 +288,7 @@ Decision(decision=DecisionType.END, end=End(reason=EndReason.TASK_COMPLETE))
 | Field | Type | Required | Base-harness value |
 |---|---|---|---|
 | `status` | `str` | yes | `"ok"` (`HealthStatus`: `ok` / `degraded` / `down`) |
-| `version` | `str` | yes | the SDK version (`0.1.5`, from `_version.py`) |
+| `version` | `str` | yes | the SDK version (`0.1.6`, derived at import time by `_version.py` from `pyproject.toml` / install metadata) |
 | `active_sessions` | `int \| None` | no | live session count from router tracking; `None` only when the harness tracks no sessions |
 | `capabilities` | `list[str] \| None` | no | `list(Capability)` — all six decision types |
 | `degraded_reason` | `str \| None` | no | `None` |
