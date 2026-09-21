@@ -307,6 +307,129 @@ passes it through; harnesses that don't get the router's own tracking instead
 (`"completed"` once `on_result` returns `end`), so `status` and the
 `active_sessions` count in `GET /v1/health` always agree.
 
+## Tool-calling harnesses
+
+The Quickstart covers the **text** path. A tool-calling harness returns a
+`Decision(decision=DecisionType.TOOL_CALL, ...)` instead, and the wire
+contract around it has sharp edges that cost real debugging time when guessed
+at. Every shape below is **measured** against this SDK (captured from a live
+uvicorn server), not transcribed from the spec.
+
+### The request payload needs every required field
+
+`POST /v1/process` requires `session_id`, `identity`, and `message` at the
+top level, plus `context.config` and `context.session_state` inside
+`context`. Miss any of them and FastAPI rejects the request with a `422`
+before your harness runs. Inside `identity`, `chat_id` and `platform` are
+required (`user_id`, `user_name`, `thread_id` are optional). Empty objects
+pass for `config`/`session_state` — the keys just have to be present. A
+request without `identity` fails like this (measured):
+
+```json
+{"detail":[{"type":"missing","loc":["body","identity"],"msg":"Field required","input":{"session_id":"sess-tool-002","message":{"content":"deploy the app"},"context":{"config":{},"session_state":{},"history":[]}}}]}
+```
+
+A complete, valid payload:
+
+```bash
+curl -X POST http://localhost:9191/v1/process \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "session_id": "sess-tool-001",
+    "identity": {"chat_id": "chat-1", "platform": "cli", "user_id": "user-1"},
+    "message": {"content": "deploy the app"},
+    "context": {
+      "config": {"timeout_seconds": 300},
+      "session_state": {"turn_count": 0},
+      "history": []
+    }
+  }'
+```
+
+### The response is FLAT — `decision` is a string discriminator
+
+There is no nested `"decision": {...}` object. The response carries a
+top-level `decision` **string** naming the decision type, and the payload
+sits in a top-level key named after that type. Measured response (HTTP 200)
+for a tool-call decision:
+
+```json
+{"decision":"tool_call","decision_id":"6fda46c9-7b2c-4aba-b791-9a1f1e68cdd0","history":[],"tool_call":{"name":"deploy_app","params":{"env":"staging","replicas":2},"reasoning":"user asked to deploy"}}
+```
+
+Read the call from `resp["tool_call"]`, not
+`resp["decision"]["tool_call"]` — the latter doesn't exist.
+
+### Handler side: `ToolCall` takes `name` / `params` / `reasoning`
+
+The `ToolCall` fields are exactly `name` (str), `params` (dict) and
+`reasoning` (optional str). There is no `arguments` and no `call_id` —
+OpenAI-style guesses fail validation:
+
+```python
+from h3_harness import Decision, DecisionType, ToolCall
+
+
+def deploy_decision(req) -> Decision:
+    return Decision(
+        decision=DecisionType.TOOL_CALL,
+        tool_call=ToolCall(
+            name="deploy_app",
+            params={"env": "staging", "replicas": 2},  # not "arguments"
+            reasoning="user asked to deploy",
+        ),
+        history=list(req.context.history),
+    )
+```
+
+### `on_result`: tool results arrive as a RAW dict
+
+`ResultRequest.result` is typed `dict[str, Any]` and the router does **not**
+validate it against `ResultPayload` — the exported `ResultPayload` model
+(`type`/`success`/`tool_name`/`data`/`duration_ms`) documents the canonical
+shape, but nothing on this path constructs it. The natural typed-access path
+therefore raises:
+
+```python
+from h3_harness import Decision, DecisionType, End
+
+
+async def on_result(self, req):
+    # req.result is a RAW dict, not a ResultPayload: attribute access
+    # (req.result.data) raises AttributeError: 'dict' object has no
+    # attribute 'data'. Use dict access.
+    tool_calls = req.result.get("tool_calls") or []  # list[dict]
+    for call in tool_calls:
+        print(call["name"])  # plain dict access — never call.data
+    return Decision(decision=DecisionType.END, end=End(reason="task_complete"))
+```
+
+(See *Result payloads* above for more on the raw-dict result shape.)
+
+### Failure modes: handler mistakes come back as HTTP 200, not 4xx
+
+Two different layers, two very different failure surfaces:
+
+- **Request-shape mistakes** (missing `identity`, `config`,
+  `session_state`, …) → clean `422`: FastAPI validates the request body
+  before your handler runs.
+- **Handler-side mistakes** (a `ToolCall` built with `arguments=` instead
+  of `params=`, `.data` attribute access on a raw dict) raise *inside*
+  `on_process` / `on_result` — and the router converts any handler
+  exception into a normal-looking **HTTP 200** `end` decision (measured):
+
+```json
+{"decision":"end","decision_id":"b859661d-8e66-4871-8d17-1752165b4c0b","history":[],"end":{"reason":"error","summary":"1 validation error for ToolCall\nparams\n  Field required [type=missing, input_value={'name': 'deploy_app', 'a...ts': {'env': 'staging'}}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing"}}
+```
+
+The only signals are `end.reason == "error"`, the (truncated) traceback in
+`end.summary`, and the full traceback in the **server logs**
+(`logger.exception("on_process failed")`) — the client sees a success
+status either way. This masking is the current contract (see *Error
+handling* above); making validation failures loud is tracked separately as
+GAP-065. Until then, don't rely on a 4xx to tell you your decision shape is
+wrong — check `end.summary` when a session ends unexpectedly.
+
 ## Development
 
 ```bash
