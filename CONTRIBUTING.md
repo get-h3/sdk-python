@@ -31,7 +31,7 @@ sdk-python/
 │       ├── echo.py            # Echo harness (battery-ready template)
 │       ├── minimal.py         # Bare-minimum example
 │       └── langchain_agent.py # LangChain integration demo
-├── tests/                     # 18 pytest modules + __init__.py (220 tests)
+├── tests/                     # 18 pytest modules + __init__.py (227 tests)
 │   ├── __init__.py
 │   ├── test_benchmarks.py
 │   ├── test_count_guard.py
@@ -56,7 +56,7 @@ sdk-python/
 │   ├── generate-protocol.py       # Regenerates protocol.py from get-h3/protocol schemas
 │   ├── refresh-vendored-schemas.sh # Re-vendors the upstream JSON Schemas
 │   ├── serve_echo.py              # Serve the echo example for the test battery
-│   └── test-count.txt             # Canonical counts (battery=46, suite=220)
+│   └── test-count.txt             # Canonical counts (battery=46, suite=227)
 ├── Makefile
 ├── pyproject.toml             # Packaging, version authority, dev extras
 ├── pytest.ini                 # pytest config (testpaths, asyncio_mode)
