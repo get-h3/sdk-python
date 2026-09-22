@@ -232,6 +232,145 @@ if not isinstance(tool_calls, list):
 
 ---
 
+## Wire payloads — the smallest body each endpoint accepts
+
+The tables above enumerate every field each model carries. This section answers
+the question they do not: **which of those fields the wire actually requires**,
+and what the smallest valid body looks like. Both were read off
+`src/h3_harness/protocol.py` and then exercised over HTTP — each example below
+returns `200` from `create_router`, and dropping any field marked *required*
+returns `422`.
+
+Two rules cover all three request models:
+
+- A field marked **required** must be present, and so must the object that
+  contains it. A missing one is a `422` produced by pydantic **before** your
+  handler runs — the body is FastAPI's, not `ErrorResponse` (see the notes under
+  [Endpoints](#endpoints)).
+- Everything else has a default, so `{}` is a valid value wherever the nested
+  model has no required field of its own: `"config": {}` and
+  `"session_state": {}` are valid; `"identity": {}` is not.
+
+### `POST /v1/process` — required at the top level
+
+| Field | Type | Required | Optional siblings (defaults in [Request models](#request-models)) |
+|---|---|---|---|
+| `session_id` | `str` | **yes** | — |
+| `identity` | `Identity` | **yes** | `user_id`, `user_name`, `thread_id` |
+| `message` | `Message` | **yes** | `role` (default `"user"`), `timestamp`, `attachments` |
+| `context` | `Context` | **yes** | `history` (`[]`), `models` (`[]`), `tools` (`[]`), `memory`, `skills` |
+
+Required *inside* those objects — the complete set, nothing else:
+
+| Path | Type | Required |
+|---|---|---|
+| `identity.chat_id` | `str` | **yes** |
+| `identity.platform` | `str` | **yes** |
+| `message.content` | `str` | **yes** |
+| `context.config` | `Config` | **yes** — may be `{}`, every `Config` field is optional |
+| `context.session_state` | `SessionState` | **yes** — may be `{}`, every field is optional |
+
+`identity.user_id` is **optional** (`str \| None = None`): `{"chat_id": "c",
+"platform": "cli"}` is a complete `Identity`. (The 09-19 integration dogfood's
+error table names a `{user_id, chat_id, platform}` triple as required; the model
+requires the last two only — this document follows the code.) Anything carried
+inside `context.history` / `models` / `tools` must itself satisfy that element
+model's required set: `HistoryEntry` needs `content` **and** `role`; `Model`
+needs `name`, `provider`, `context_window`; `Tool` needs `name`, `description`,
+`parameters`; `Attachment` needs `mime_type`, `type`, `url`.
+
+Minimal valid body (`200` + a `Decision`):
+
+```json
+{
+  "session_id": "sess-001",
+  "identity": {"chat_id": "chat-1", "platform": "cli"},
+  "message": {"content": "Hello, harness!"},
+  "context": {"config": {}, "session_state": {}}
+}
+```
+
+### `POST /v1/result` — required at the top level
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `session_id` | `str` | **yes** | Same id as the `process` call this result belongs to. |
+| `decision_id` | `str` | **yes** | The `decision_id` of the `Decision` being reported on. |
+| `result` | `dict[str, Any]` | **yes** | **Raw dict — no model is applied to it on the wire.** |
+
+Those three are the whole model: there is no `context`, and no `type`/`success`
+at the top level. Because `result` is a bare `dict[str, Any]`, nothing validates
+it — `{}` is accepted, and a non-`ResultType` value such as
+`{"type": "tool", "success": true}` is accepted too. `ResultPayload` (`type` +
+`success` required, `tool_name`/`data`/`duration_ms` optional) is the **canonical
+shape to send**, not a gate that will reject a bad one — read `result` with
+`.get()`.
+
+Minimal valid body (`200` + the next `Decision`), using the canonical shape:
+
+```json
+{
+  "session_id": "sess-001",
+  "decision_id": "6e0f92e4-4919-4a7a-b739-927a546e375a",
+  "result": {"type": "tool_result", "success": true}
+}
+```
+
+### `POST /v1/cancel` — required at the top level
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `session_id` | `str` | **yes** | Must be an id the harness knows when it implements `get_session_info`, else `404`. |
+| `reason` | `str` | **yes** | Canonical values: `user_interrupt`, `timeout`, `system` (`CancelReason`). Plain `str`, **not** enum-validated — any string is accepted. |
+
+Both fields are required; the model has no others.
+
+Minimal valid body — `200 {"cancelled": true, "cancelled_decision_id": null}`:
+
+```json
+{"session_id": "sess-001", "reason": "user_interrupt"}
+```
+
+### The payload inside the `Decision` you return
+
+Hermes reads the payload field matching `decision`; only that field's own
+required set matters. Per payload model (meaning is in
+[Decision variants](#decision-variants)):
+
+| `decision` | Payload | Required fields | Optional fields |
+|---|---|---|---|
+| `text` | `TextResponse` | `content`, `finished` | — |
+| `tool_call` | `ToolCall` | `name`, `params` | `reasoning` |
+| `llm_call` | `LLMCall` | `messages`, `model` | `max_tokens`, `system_prompt`, `temperature` |
+| `wait` | `Wait` | `reason` | `duration_seconds` (≥ 1), `poll_endpoint` |
+| `delegate` | `Delegate` | `task` | `agent`, `context`, `model`, `provider` |
+| `end` | `End` | `reason` | `summary` |
+
+`ToolCall` in particular is `{name, params, reasoning?}`: `params` is a
+`dict[str, Any]` carrying the tool arguments, and there is no `arguments` or
+`call_id` field — `ToolCall(arguments=..., call_id=...)` is a `ValidationError`.
+`decision_id` and `history` are never required: pydantic mints the id and
+`history` defaults to `[]`.
+
+### Ports, and where the runnable curls live
+
+The copy-paste curl invocations for all three endpoints — with their response
+bodies and the `decision_id` chaining — live in the
+[Integration Guide → 4. Smoke test it with curl](integration-guide.md#4-smoke-test-it-with-curl)
+and are not duplicated here. They POST to `http://localhost:9191`, the port
+`src/h3_harness/examples/echo.py` binds by default (`_server_port()`, an argv
+number overrides it: `python echo.py 8000`). `examples/minimal.py` and
+`examples/langchain_agent.py` bind **8000** instead (see
+[examples.md](api/examples.md)) — substitute whatever port your own harness runs
+on, and pass the same one to `h3-test --endpoint`.
+
+One response-shape trap belongs next to the request bodies: the `Decision`
+response is **flat** — `decision` is a string discriminator and the payload sits
+at the top level, so read `resp["text"]["content"]`, never
+`resp["decision"]["text"]` (see [Decision](#decision)).
+
+---
+
 ## Response models
 
 ### `Decision`
