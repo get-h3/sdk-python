@@ -3,9 +3,9 @@ name: h3-sdk-python-usage
 description: >-
   How to USE the H3 Python SDK (get-h3/sdk-python) — build H3-compliant agent
   harnesses that Hermes Core can use as a brain. Install path, quickstart,
-  the 3 battery conventions, pitfalls. Load this before touching this repo or
-  building a harness with h3-harness-sdk.
-version: 1.0.4
+  the five battery conventions (README is the authority), pitfalls. Load this
+  before touching this repo or building a harness with h3-harness-sdk.
+version: 1.0.5
 category: software-development
 ---
 
@@ -118,21 +118,41 @@ GET/DELETE /v1/sessions/{id}, POST /v1/cancel, GET /v1/health
   `{"decision":"end","reason":"error","summary":...}` with HTTP 200 — check
   the `summary` when a session ends unexpectedly.
 
-## The 3 battery conventions (undocumented in README — REQUIRED for 46/46)
+## The five battery conventions (documented in README → *Passing the battery*)
+
+`README.md` → *Passing the battery (h3-test compliance)* is the authority:
+it documents the five numbered conventions the 46-test battery checks. They
+are listed here with the battery test that pins each one.
 
 1. **Echo history:** include `history=list(req.context.history)` in every
-   Decision returned from **`on_process`** (test: `process_preserves_history`).
-   ⚠️ **`on_result` has NO context** — `ResultRequest` carries only
-   `decision_id`/`result`/`session_id`; do NOT reference `req.context` there
-   (GAP-033; a doc-following user crashes on first /v1/result).
+   Decision returned from **`on_process`** (test:
+   `test_2_8_process_preserves_history`). README convention #1 is explicit
+   about the boundary: ⚠️ **`on_result` has NO context** — `ResultRequest`
+   carries only `decision_id`/`result`/`session_id`; do NOT reference
+   `req.context` there (GAP-033; a doc-following user crashes on first
+   /v1/result) — a decision from `on_result` simply omits `history`.
 2. **Models guard:** only return `LLM_CALL` when `req.context.models` is
-   non-empty; use `models[0].name` (test: `no_models_available`).
+   non-empty; use `models[0].name` (test: `test_5_8_no_models_available` —
+   "hallucinated model").
 3. **Streaming flag:** if the message contains "do not finish", return
-   `TextResponse(..., finished=False)` (test: `process_text_finished_false`).
-   Apply it in EVERY TEXT branch, including the empty-models fallback —
-   the battery caught a harness that missed it there (2026-08-13 run).
+   `TextResponse(..., finished=False)` (test:
+   `test_2_4_process_text_finished_false`). Apply it in EVERY TEXT branch,
+   including the empty-models fallback — the battery caught a harness that
+   missed it there (2026-08-13 run).
+4. **404 unknown sessions:** track sessions in the harness and let
+   `get_session_info` return `None` for an unknown id — the router turns that
+   into the 404 the battery asserts on cancel (`test_5_9b
+   cancel_unknown_session`) and GET (`test_5_10 session_not_found`).
+   `MockHermes.cancel()` calls `on_cancel` directly and never 404s, so the
+   testbed cannot prove this one — only a wire test can.
+5. **Report `status="completed"` once the session ends** (`test_5_11
+   session_status_completed`): set the session dict to `"completed"` when
+   `on_result` returns `end` (README convention #5). Since GAP-058 a harness
+   that never writes a `status` key passes too — the router tracks the
+   lifecycle itself, and `GET /v1/health` (`active_sessions`) counts that same
+   value.
 
-The shipped `src/h3_harness/examples/echo.py` implements all three — treat it
+The shipped `src/h3_harness/examples/echo.py` implements all five — treat it
 as the reference implementation. A from-scratch harness following these passed
 the whole battery (see `docs/dogfood/2026-08-03-integration.md` for a full example).
 
@@ -182,7 +202,11 @@ h3-test --endpoint http://127.0.0.1:9191        # 46/46 + exit 0 = compliant
 - **Do** override `on_session_terminate` to actually drop session state if you
   track sessions — the base implementation is a no-op, so `DELETE
   /v1/sessions/{id}` returns `{"terminated":true}` while `GET` still returns
-  the session (GAP-044). The quickstart/echo examples don't override it either.
+  the session (GAP-044). The shipped examples DO override it and are the
+  template for the 3-line fix: `examples/echo.py` (the
+  `on_session_terminate` at echo.py:106) and the README quickstart's
+  `self._sessions.pop(session_id, None)` (README *Session lifecycle*, also in
+  the quickstart class at README:95) — a later `GET` then 404s.
 - **Do** handle `tool_calls` as a LIST (OpenAI style) — real LLM responses
   wrap tool calls in arrays; the shipped examples only show single dicts.
 - **Do** expect handler exceptions to surface as HTTP 200

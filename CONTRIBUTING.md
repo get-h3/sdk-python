@@ -15,31 +15,58 @@ Or use the Makefile: `make install` creates the venv and installs dev deps.
 
 ## Package Structure
 
+The tracked tree (verify any time with `git ls-files src tests scripts`):
+
 ```
 sdk-python/
 ├── src/h3_harness/
-│   ├── protocol.py    # Pydantic models (generated from protocol repo JSON Schema)
-│   ├── harness.py     # BaseHarness ABC + FastAPI router
-│   ├── middleware.py  # Request logging middleware
-│   ├── testbed.py     # MockHermes for pytest
+│   ├── __init__.py            # Public surface (re-exports)
+│   ├── _version.py            # Derives the version at import time (pyproject.toml is authority)
+│   ├── protocol.py            # Pydantic models (generated from protocol repo JSON Schema)
+│   ├── harness.py             # BaseHarness ABC + FastAPI router
+│   ├── middleware.py          # Request logging middleware
+│   ├── testbed.py             # MockHermes for pytest
 │   └── examples/
+│       ├── __init__.py
 │       ├── echo.py            # Echo harness (battery-ready template)
 │       ├── minimal.py         # Bare-minimum example
 │       └── langchain_agent.py # LangChain integration demo
-├── tests/
-│   ├── test_protocol.py
+├── tests/                     # 18 pytest modules + __init__.py (220 tests)
+│   ├── __init__.py
+│   ├── test_benchmarks.py
+│   ├── test_count_guard.py
+│   ├── test_example_echo.py
+│   ├── test_example_langchain.py
+│   ├── test_example_launch_forms.py
+│   ├── test_example_minimal.py
+│   ├── test_generate_protocol.py
+│   ├── test_handler_crash.py
 │   ├── test_harness.py
 │   ├── test_middleware.py
-│   ├── test_testbed.py
-│   ├── test_schema_validation.py
+│   ├── test_protocol.py
 │   ├── test_quickstart.py
-│   ├── test_example_langchain.py
-│   └── test_benchmarks.py
+│   ├── test_schema_validation.py
+│   ├── test_session_gc.py
+│   ├── test_session_health_parity.py
+│   ├── test_session_status.py
+│   ├── test_testbed.py
+│   └── test_version_authority.py
 ├── scripts/
-│   ├── generate-protocol.py   # Regenerates protocol.py from get-h3/protocol schemas
-│   └── serve_echo.py          # Serve the echo example for the test battery
-└── Makefile
+│   ├── check-test-count.sh        # Polices the count prose in this repo (battery/suite)
+│   ├── generate-protocol.py       # Regenerates protocol.py from get-h3/protocol schemas
+│   ├── refresh-vendored-schemas.sh # Re-vendors the upstream JSON Schemas
+│   ├── serve_echo.py              # Serve the echo example for the test battery
+│   └── test-count.txt             # Canonical counts (battery=46, suite=220)
+├── Makefile
+├── pyproject.toml             # Packaging, version authority, dev extras
+├── pytest.ini                 # pytest config (testpaths, asyncio_mode)
+└── uv.lock                    # Locked dependency set
 ```
+
+This inventory is kept equal to the tracked tree (the acceptance for a doc PR
+is that the list and `git ls-files` agree). `docs/`, `skills/`, `.github/` and
+the governance files at the repo root are described in
+[docs/repository-layout.md](docs/repository-layout.md).
 
 ## Before Making Changes
 
