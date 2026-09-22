@@ -260,15 +260,43 @@ Exceptions raised inside your harness's `on_process` / `on_result` are
 {"decision": "end", "end": {"reason": "error", "summary": "<exception text>"}}
 ```
 
+**A validation mistake in your own decision-building code reaches the caller
+this way too.** `Decision` and its payloads are pydantic models, so building
+one with the wrong kwargs — `ToolCall(tool="read_file", arguments={})`, where
+the real field names are `name` and `params` — raises a `ValidationError`
+inside your handler, and the API caller gets a *legitimate-looking protocol
+response* rather than an error:
+
+- HTTP **200** with `decision="end"` and `end.reason="error"`;
+- the actual cause — here the pydantic validation error naming the offending
+  field — in **`end.summary`**;
+- one `WARNING` on the `h3_harness.harness` logger naming the masked
+  `decision_id` and pointing at `end.summary`, so the failure is findable
+  from the caller's own response instead of only in the server's stderr.
+
+**For local development, `create_router(..., debug_errors=True)`** turns the
+mask off:
+
+```python
+app.include_router(create_router(MyHarness(), debug_errors=True))
+```
+
+With `debug_errors=True` an exception from `on_process` / `on_result`
+propagates instead of being masked, so the client gets a real **HTTP 500**
+with the traceback in the server log — the fastest way to see that a
+`ValidationError` is your own kwarg mistake and not a protocol end. The
+default is `debug_errors=False` (masking): that is the behavior the `h3-test`
+battery and existing adopters expect, so do not ship with it enabled.
+
 This masking **is the current contract** — the spec
 (`get-h3/h3` → `specs/04-SDK-Libraries.md`) is silent on handler exceptions,
 and the behavior is locked in by `tests/test_handler_crash.py`. From the
 shim's point of view the session simply ends: it sees a normal `end` and
-stops, so **the session dies silently**. If you need to distinguish a crash
-from a real completion, validate the decision — the
-`end.reason == "error"` marker (and the server-side
-`on_process failed` / `on_result failed` log lines from
-`logger.exception`) is the only signal.
+stops, so **the session dies silently**. To tell a crashed session from a
+real completion, read `end.reason` (the `"error"` marker), the cause in
+`end.summary`, and the `WARNING` line above — the server-side
+`on_process failed` / `on_result failed` log lines from `logger.exception`
+still carry the full traceback.
 
 Real HTTP 500s are reserved for **non-handler** failures and are not
 disturbed by the masking: exceptions from `on_cancel` /
@@ -444,7 +472,7 @@ make generate  # regenerate src/h3_harness/protocol.py from JSON Schema
 ```
 
 **Running tests:** use the project venv — `make install` then `.venv/bin/pytest`
-(227 tests). Bare `pytest` on an ambient interpreter may fail to import
+(229 tests). Bare `pytest` on an ambient interpreter may fail to import
 `h3_harness`; `pytest.ini`'s `pythonpath = src` covers collection from the
 source tree without an install, but the project venv is the supported path.
 

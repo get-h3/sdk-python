@@ -31,7 +31,7 @@ sdk-python/
 │       ├── echo.py            # Echo harness (battery-ready template)
 │       ├── minimal.py         # Bare-minimum example
 │       └── langchain_agent.py # LangChain integration demo
-├── tests/                     # 18 pytest modules + __init__.py (227 tests)
+├── tests/                     # 18 pytest modules + __init__.py (229 tests)
 │   ├── __init__.py
 │   ├── test_benchmarks.py
 │   ├── test_count_guard.py
@@ -56,7 +56,7 @@ sdk-python/
 │   ├── generate-protocol.py       # Regenerates protocol.py from get-h3/protocol schemas
 │   ├── refresh-vendored-schemas.sh # Re-vendors the upstream JSON Schemas
 │   ├── serve_echo.py              # Serve the echo example for the test battery
-│   └── test-count.txt             # Canonical counts (battery=46, suite=227)
+│   └── test-count.txt             # Canonical counts (battery=46, suite=229)
 ├── Makefile
 ├── pyproject.toml             # Packaging, version authority, dev extras
 ├── pytest.ini                 # pytest config (testpaths, asyncio_mode)
@@ -74,7 +74,7 @@ the governance files at the repo root are described in
 
 ```bash
 make test          # uv run pytest -x --tb=short -q
-# 227 tests
+# 229 tests
 ```
 
 ### Run Lint + Format Check
@@ -149,14 +149,14 @@ prompts, and 404 unknown sessions.
 ```bash
 make lint          # uv run ruff check src/ tests/
 make fmt           # uv run ruff format src/ tests/ (then re-check)
-make test          # uv run pytest -x --tb=short -q (227 tests)
+make test          # uv run pytest -x --tb=short -q (229 tests)
 ```
 
 ### CI Pipeline
 
 GitHub Actions runs on every PR:
 1. Lint (ruff)
-2. Tests (pytest, 227 tests)
+2. Tests (pytest, 229 tests)
 3. `h3-test --endpoint http://localhost:9191` (against echo example — 46/46 battery)
 
 All must pass.
@@ -187,7 +187,7 @@ references an older version).
 
 ## Review Checklist
 
-- [ ] `make test` passes (227 tests)
+- [ ] `make test` passes (229 tests)
 - [ ] `make lint` passes
 - [ ] `h3-test --endpoint http://localhost:9191` passes against echo example (46/46)
 - [ ] New Pydantic fields use `Optional` where appropriate

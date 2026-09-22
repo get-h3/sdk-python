@@ -428,7 +428,27 @@ def _track(harness: BaseHarness, session_id: str, status: str) -> None:
         logger.exception("session tracking failed for %s", session_id)
 
 
-def create_router(harness: BaseHarness, *, prefix: str = "") -> APIRouter:
+def _warn_masked_decision(handler: str, decision: Decision) -> None:
+    """One discoverability WARN for a masked handler failure (SDKPY-GAP-065).
+
+    The masking contract (GAP-034) returns a normal-looking HTTP 200
+    ``end``/``error`` Decision, so a caller cannot tell a crashed session from
+    a legitimate protocol end; before this line the only trace of the cause
+    outside ``end.summary`` was the server's own stderr. The line names the
+    masked decision's ``decision_id`` so a caller holding the response can
+    grep the log for it, and points at ``end.summary`` where the cause sits.
+    """
+    logger.warning(
+        "%s failed — masked as an end/error Decision %s; see end.summary for "
+        "the cause (create_router(..., debug_errors=True) raises instead)",
+        handler,
+        decision.decision_id,
+    )
+
+
+def create_router(
+    harness: BaseHarness, *, prefix: str = "", debug_errors: bool = False
+) -> APIRouter:
     """Create a FastAPI router wired to the given harness.
 
     Registers all H3 endpoints:
@@ -444,6 +464,19 @@ def create_router(harness: BaseHarness, *, prefix: str = "") -> APIRouter:
         app.include_router(create_router(MyHarness()))
         # or with a prefix:
         app.include_router(create_router(MyHarness(), prefix="/api"))
+
+    Args:
+        harness: the harness whose handlers the router calls.
+        prefix: path prefix for every registered route.
+        debug_errors: dev-mode error propagation (SDKPY-GAP-065). ``False``
+            (default) keeps the documented contract: an exception raised by
+            ``on_process`` / ``on_result`` is masked as an HTTP 200
+            ``end``/``error`` Decision whose ``end.summary`` carries the
+            exception text, plus one WARNING naming the masked decision. Set
+            ``True`` while developing to let that exception propagate instead,
+            so the client gets a real HTTP 500 with the traceback in the
+            server log — the masking is what makes a consumer's own
+            validation mistake look like a legitimate protocol response.
     """
     router = APIRouter(prefix=prefix)
 
@@ -460,11 +493,21 @@ def create_router(harness: BaseHarness, *, prefix: str = "") -> APIRouter:
         try:
             decision = await harness.on_process(req)
         except Exception as exc:
+            if debug_errors:
+                # SDKPY-GAP-065: dev mode. The exception leaves the handler, so
+                # the caller sees a real 500 and the traceback points at the
+                # offending line. The message still arrived, so the session is
+                # tracked live exactly as the masking path tracks it
+                # (DF-H3-SDK-PYTHON-FOREMAN-5).
+                logger.exception("on_process failed (debug_errors=True)")
+                _track(harness, req.session_id, "active")
+                raise
             logger.exception("on_process failed")
             decision = Decision(
                 decision=DecisionType.END,
                 end=End(reason=EndReason.ERROR, summary=str(exc)),
             )
+            _warn_masked_decision("on_process", decision)
         # DF-H3-SDK-PYTHON-FOREMAN-5: a message makes the session live. The
         # response is returned unchanged (the error decision above included).
         _track(harness, req.session_id, "active")
@@ -478,11 +521,19 @@ def create_router(harness: BaseHarness, *, prefix: str = "") -> APIRouter:
         try:
             decision = await harness.on_result(req)
         except Exception as exc:
+            if debug_errors:
+                # SDKPY-GAP-065: dev mode, same propagation as on_process. No
+                # END decision was produced, so the session stays live — the
+                # masking path below is the one that closes it.
+                logger.exception("on_result failed (debug_errors=True)")
+                _track(harness, req.session_id, "active")
+                raise
             logger.exception("on_result failed")
             decision = Decision(
                 decision=DecisionType.END,
                 end=End(reason=EndReason.ERROR, summary=str(exc)),
             )
+            _warn_masked_decision("on_result", decision)
         # An END decision closes the exchange — the session is PURGED from the
         # live tracking (filed in the bounded ended window) so one-shot and
         # error-path conversations cannot accumulate there; a harness crash in

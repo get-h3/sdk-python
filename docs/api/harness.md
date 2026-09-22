@@ -119,11 +119,14 @@ working implementation.
 
 ---
 
-## `create_router(harness: BaseHarness, *, prefix: str = "") -> APIRouter`
+## `create_router(harness: BaseHarness, *, prefix: str = "", debug_errors: bool = False) -> APIRouter`
 
 Create a FastAPI router wired to the given harness, registering all H3
 endpoints. `prefix` is prepended to every path (e.g. `prefix="/api"` yields
-`/api/v1/health`).
+`/api/v1/health`). `debug_errors=True` is a local-development escape hatch:
+an exception from `on_process` / `on_result` propagates (HTTP 500) instead of
+being masked as an `end/error` decision. The default `False` keeps the
+masking contract below.
 
 ```python
 app = FastAPI()
