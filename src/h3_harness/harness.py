@@ -73,7 +73,28 @@ class BaseHarness(ABC):
     # harnesses already use `_sessions` for their own get_session_info
     # metadata dicts. Writing status strings into that name clobbers the
     # metadata and makes GET /v1/sessions/{id} fail on `info.get(...)`.
+    #
+    # LIVE sessions only (SDKPY-GAP-063b): a session is in here from the
+    # POST /v1/process that opens the turn until it ends — the END decision
+    # of POST /v1/result or DELETE /v1/sessions/{id} PURGES the entry. The
+    # dict therefore cannot accumulate one entry per finished conversation.
     _live_sessions: dict[str, str] | None = None
+
+    # Bounded closing window of ended sessions (session_id -> terminal
+    # status), also lazily created. The END purge removes the live entry, but
+    # ``GET /v1/sessions/{id}`` and ``session_status()`` must keep reporting a
+    # truthful ``completed`` for it (GAP-058 parity), so the terminal status
+    # is remembered here — bounded by ``_ended_session_cap``, oldest evicted
+    # first, exactly like the shim scaffold's H3_SESSION_MAX (get-h3/shim
+    # d62dc7f). Same class-default-None rule as ``_live_sessions``.
+    _ended_sessions: dict[str, str] | None = None
+
+    #: How many recently-ended sessions keep answering for their status.
+    #: One entry per finished conversation either way — this is what stops
+    #: the ended window from becoming the unbounded leak the live map was.
+    #: 0 (or less) disables the window: the purge then keeps no memory.
+    #: Subclasses may override; the class default is shared, never mutated.
+    _ended_session_cap: int = 1024
 
     def __init__(self) -> None:
         self._started_at = time.time()
@@ -112,47 +133,108 @@ class BaseHarness(ABC):
 
         Called by ``create_router`` on POST /v1/process, POST /v1/result and
         DELETE /v1/sessions/{session_id}. Safe when ``__init__`` was never
-        called: the tracking dict is lazily created here, exactly like
+        called: the tracking dicts are lazily created here, exactly like
         ``_started_at`` is lazily initialised in :meth:`health`.
+
+        ``"active"`` is the only live state: the session is stored in
+        ``_live_sessions`` and any ended status the router filed for it is
+        dropped, so a fresh ``POST /v1/process`` re-activates a session that
+        had gone quiet.
+
+        EVERY other status is terminal — the END decision of ``POST
+        /v1/result`` (``task_complete`` and ``error`` alike) and ``DELETE
+        /v1/sessions/{id}`` — and PURGES the live entry rather than
+        overwriting it in place, filing the status in the bounded
+        :meth:`_remember_ended` window instead (SDKPY-GAP-063b). That is the
+        difference from DF4-H3-SHIM-2, which left the ended entry sitting in
+        the live map until something happened to read health: one-shot and
+        error-path conversations now leave the live map at the END write, so
+        they cannot accumulate. The status reads are unchanged (GAP-058) —
+        ``session_status()`` and ``GET /v1/sessions/{id}`` still resolve a
+        truthful ``completed`` for the ended session, from the window.
         """
         try:
             if not session_id:
                 return
+            if status == SessionStatus.ACTIVE.value:
+                tracked = self._live_sessions
+                if not isinstance(tracked, dict):
+                    tracked = {}
+                    self._live_sessions = tracked
+                tracked[session_id] = status
+                ended = self._ended_sessions
+                if isinstance(ended, dict):
+                    ended.pop(session_id, None)
+                return
             tracked = self._live_sessions
-            if not isinstance(tracked, dict):
-                tracked = {}
-                self._live_sessions = tracked
-            tracked[session_id] = status
+            if isinstance(tracked, dict):
+                tracked.pop(session_id, None)
+            self._remember_ended(session_id, status)
         except Exception:  # pragma: no cover - defensive: never fail a request
             logger.exception("_track_session failed for %s", session_id)
+
+    def _remember_ended(self, session_id: str, status: str) -> None:
+        """File a terminal status in the bounded closing window. Never raises.
+
+        The window is the memory behind ``session_status()`` and
+        ``GET /v1/sessions/{id}`` for a session whose live entry the END
+        purge already removed: the ended status stays resolvable while it is
+        in the window, and the window keeps at most ``_ended_session_cap``
+        entries — oldest evicted first, mirroring the shim scaffold's
+        ``H3_SESSION_MAX`` (get-h3/shim d62dc7f). Without that cap the window
+        would just be the unbounded live map under a new name.
+        """
+        try:
+            ended = self._ended_sessions
+            if not isinstance(ended, dict):
+                ended = {}
+                self._ended_sessions = ended
+            ended.pop(session_id, None)  # re-insert as the most recent
+            ended[session_id] = status
+            cap = self._ended_session_cap
+            if cap <= 0:
+                ended.clear()
+                return
+            while len(ended) > cap:
+                ended.pop(next(iter(ended)), None)
+        except Exception:  # pragma: no cover - defensive: never fail a request
+            logger.exception("_remember_ended failed for %s", session_id)
 
     def _tracked_session_status(self, session_id: str) -> str | None:
         """Raw router-tracked status string for ``session_id``, else ``None``.
 
-        The single read of ``_live_sessions``: ``session_status()`` and
+        The single read of the router's tracking: the live map first, then
+        the bounded ended window (SDKPY-GAP-063b). ``session_status()`` and
         ``active_session_count()`` both go through here, so the two surfaces
         that answer "is this session live?" (GET /v1/sessions/{id} and
         GET /v1/health) can never read the router's tracking differently.
         """
-        tracked = self._live_sessions
-        if not isinstance(tracked, dict):
-            return None
-        value = tracked.get(session_id)
-        return value if isinstance(value, str) else None
+        for tracked in (self._live_sessions, self._ended_sessions):
+            if not isinstance(tracked, dict):
+                continue
+            value = tracked.get(session_id)
+            if isinstance(value, str):
+                return value
+        return None
 
     def session_status(self, session_id: str) -> SessionStatus | None:
         """Router-tracked status for ``session_id``, or ``None``.
 
-        ``None`` means the router has NEVER tracked this session id: no
-        ``POST /v1/process``, ``POST /v1/result`` or
-        ``DELETE /v1/sessions/{id}`` ever carried it. It is NOT a statement
-        about the harness's own session store — ``get_session_info`` remains
-        the authority for session metadata and for 404s.
+        ``None`` means the router has no tracked status for this session id:
+        no ``POST /v1/process``, ``POST /v1/result`` or
+        ``DELETE /v1/sessions/{id}`` ever carried it, OR it ended so long ago
+        that the bounded ended window (``_ended_session_cap``) has since
+        evicted it. It is NOT a statement about the harness's own session
+        store — ``get_session_info`` remains the authority for session
+        metadata and for 404s.
 
         When the router has tracked the id, the status is the one written on
         the lifecycle endpoint: ``ACTIVE`` from ``POST /v1/process``,
         ``COMPLETED`` once ``POST /v1/result`` returns an ``end`` decision or
-        ``DELETE /v1/sessions/{id}`` runs, else ``ACTIVE`` again.
+        ``DELETE /v1/sessions/{id}`` runs, else ``ACTIVE`` again. The END
+        purge (SDKPY-GAP-063b) removes the session from the live map at that
+        write but keeps the status here, so the ended session keeps resolving
+        while it is in the window.
 
         A tracked value the router itself would not have written (a harness
         writing its own strings into ``_live_sessions``) is reported as
@@ -192,6 +274,9 @@ class BaseHarness(ABC):
         disagrees with the router's own tracking (the examples flip to
         ``"completed"`` in ``on_result``), so it must not be counted. A
         harness that raises from ``get_session_info`` keeps its tracked value.
+        A harness that still states ``"active"`` for a session the router has
+        already ended keeps it counted too — the harness's own word wins
+        (GAP-058), and the ended window is read for the status it overrides.
 
         GAP-058: the status decision is :meth:`_resolve_status` — the SAME
         resolution ``GET /v1/sessions/{id}`` reports — so the count and the
@@ -212,29 +297,34 @@ class BaseHarness(ABC):
         return self._resolve_status(session_id, info) is SessionStatus.ACTIVE
 
     def active_session_count(self) -> int | None:
-        """Number of live (tracked, not completed) sessions.
+        """Number of live (tracked, not ended) sessions.
 
         Returns ``None`` ONLY when the harness tracks nothing at all: no
-        session has ever been seen AND ``get_session_info`` is not
-        implemented. Untracked harnesses therefore keep the historical
-        ``active_sessions: null`` health payload. Every other harness reports
-        an integer — ``0`` when it tracks sessions but none are live.
+        session has ever been seen — neither live nor in the ended window —
+        AND ``get_session_info`` is not implemented. Untracked harnesses
+        therefore keep the historical ``active_sessions: null`` health
+        payload. Every other harness reports an integer — ``0`` when it
+        tracks sessions but none are live.
 
-        Session GC (DF4-H3-SHIM-2): entries that resolve not-live here — an
-        END result, a DELETE, or a harness that dropped its own record — are
-        pruned from ``_live_sessions`` so the dict and this scan stay bounded
-        by LIVE sessions instead of growing with every finished conversation.
-        The prune runs on this read rather than on the END write so the other
-        status reads keep resolving the ended session (GAP-058 parity: GET
-        /v1/sessions/{id} and session_status() still report ``completed``
-        until the next health read).
+        Session GC (DF4-H3-SHIM-2 + SDKPY-GAP-063b). The live map is bounded
+        by construction: the END purge removes a session at the END write, so
+        ended conversations never sit in it waiting for a read. This scan is
+        the cross-check that remains — a live entry that resolves not-live
+        here (a harness whose ``get_session_info`` disagrees with the
+        router's tracking) is not counted and is pruned. The ended window is
+        NOT emptied by a read — that memory is what keeps
+        ``GET /v1/sessions/{id}`` answering ``completed`` after health has
+        already counted the session as not live; a read must never split that
+        pair (GAP-058). The cap bounds it instead. A session the harness
+        still states ``"active"`` is counted from either map: its own word is
+        the answer.
         """
-        tracked = self._live_sessions
-        if not isinstance(tracked, dict) or not tracked:
+        live = self._live_sessions if isinstance(self._live_sessions, dict) else {}
+        ended = self._ended_sessions if isinstance(self._ended_sessions, dict) else {}
+        if not live and not ended:
             return 0 if hasattr(self, "get_session_info") else None
         count = 0
-        ended: list[str] = []
-        for session_id in list(tracked):
+        for session_id in list(live):
             # GAP-058: liveness comes from the SAME resolution
             # GET /v1/sessions/{id} reports (_session_is_active ->
             # _resolve_status), so the count and the reported status cannot
@@ -242,10 +332,10 @@ class BaseHarness(ABC):
             if self._session_is_active(session_id):
                 count += 1
             else:
-                ended.append(session_id)
-        if ended:
-            for session_id in ended:
-                tracked.pop(session_id, None)
+                live.pop(session_id, None)
+        for session_id in list(ended):
+            if self._session_is_active(session_id):
+                count += 1
         return count
 
     def health(self) -> HealthResponse:
@@ -393,7 +483,12 @@ def create_router(harness: BaseHarness, *, prefix: str = "") -> APIRouter:
                 decision=DecisionType.END,
                 end=End(reason=EndReason.ERROR, summary=str(exc)),
             )
-        # An END decision closes the session; any other decision keeps it live.
+        # An END decision closes the exchange — the session is PURGED from the
+        # live tracking (filed in the bounded ended window) so one-shot and
+        # error-path conversations cannot accumulate there; a harness crash in
+        # on_result lands on the END/error decision above and purges the same
+        # way (SDKPY-GAP-063b). Any other decision — text, tool_call, llm_call:
+        # the conversation continues — keeps the session live.
         status = "completed" if decision.decision == DecisionType.END else "active"
         _track(harness, req.session_id, status)
         return decision

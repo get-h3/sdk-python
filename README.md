@@ -243,7 +243,9 @@ conventions the battery checks (beyond "return a Decision") are:
    starts and flip it to `"completed"` when `on_result` returns `end` — an
    explicit valid status always wins over the router's tracking, so a stale
    `"active"` left there is what the wire reports, and `GET /v1/health`
-   (`active_sessions`) counts the very same value.
+   (`active_sessions`) counts the very same value. The router purges its own
+   live entry on that `END` decision, so an ended conversation is never left
+   counted as an extra live session.
 
 The canonical battery-ready template is **[echo.py](src/h3_harness/examples/echo.py)**
 — it implements all five conventions and scores 46/46. Use it as the starting
@@ -442,7 +444,7 @@ make generate  # regenerate src/h3_harness/protocol.py from JSON Schema
 ```
 
 **Running tests:** use the project venv — `make install` then `.venv/bin/pytest`
-(220 tests). Bare `pytest` on an ambient interpreter may fail to import
+(227 tests). Bare `pytest` on an ambient interpreter may fail to import
 `h3_harness`; `pytest.ini`'s `pythonpath = src` covers collection from the
 source tree without an install, but the project venv is the supported path.
 

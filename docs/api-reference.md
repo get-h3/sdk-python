@@ -306,6 +306,20 @@ from `POST /v1/result` (or `DELETE /v1/sessions/{id}`) marks it completed, and
 `GET /v1/sessions/{id}` are resolved by the SAME rule
 (`BaseHarness.session_status`), so they never disagree.
 
+Since SDKPY-GAP-063b that `END` decision is a PURGE, not a status overwrite:
+the session leaves the router's live map at that write — a one-shot or
+error-path conversation can therefore never sit in it as an extra entry, so
+the live tracking cannot grow by one entry per finished conversation. Only
+the terminal status is remembered, in a bounded ending window
+(`BaseHarness._ended_session_cap`, default 1024 entries, oldest evicted
+first; subclass to tune, `0` disables the window), which is what keeps
+`status` resolving to `completed` for the session after the purge. A session
+that has been evicted from that window reports `status: active` (the
+historical fallback) even though it ended.
+
+A result whose decision is NOT `end` — `text`, `tool_call`, `llm_call` — keeps
+the session live: the conversation continues.
+
 ### `SessionResponse` — `GET /v1/sessions/{session_id}`
 
 | Field | Type | Notes |
