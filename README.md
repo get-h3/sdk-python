@@ -200,7 +200,7 @@ h3-test --endpoint http://localhost:9191   # exit 0 = compliant
 ```
 
 The Quickstart harness above implements all five conventions and is fully
-battery-compliant (**46/46**). If you modify it, keep the conventions intact —
+battery-compliant (**48/48**). If you modify it, keep the conventions intact —
 a naive harness that drops them scores **40/46** (measured against a harness
 with no history echo, no session tracking, and no streaming flag). The five
 conventions the battery checks (beyond "return a Decision") are:
@@ -248,7 +248,7 @@ conventions the battery checks (beyond "return a Decision") are:
    counted as an extra live session.
 
 The canonical battery-ready template is **[echo.py](src/h3_harness/examples/echo.py)**
-— it implements all five conventions and scores 46/46. Use it as the starting
+— it implements all five conventions and scores 48/48. Use it as the starting
 point for your own harness.
 
 ## Error handling

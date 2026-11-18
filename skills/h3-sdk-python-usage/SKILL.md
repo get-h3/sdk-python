@@ -173,7 +173,7 @@ assert decision.text.content == "Echo: Hello!"
 # any harness server:
 uvicorn my_harness:app --port 9191
 # THE GATE (from get-h3/shim; a binary may exist in another venv):
-h3-test --endpoint http://127.0.0.1:9191        # 46/46 + exit 0 = compliant
+h3-test --endpoint http://127.0.0.1:9191        # 48/48 + exit 0 = compliant
 ```
 
 ## Pitfalls

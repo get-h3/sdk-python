@@ -4,7 +4,7 @@ This guide takes you from nothing to a running H3 harness that passes the
 compliance battery (`h3-test`, **46 tests across 6 categories**). Every command
 and response below was run against `h3-harness-sdk` **0.1.6**; the harness in
 [step 3](#3-write-your-first-harness) is the exact file that produced the
-transcripts — it scores **46/46 PASSED** (`h3-test` exit code `0`).
+transcripts — it scores **48/48 PASSED** (`h3-test` exit code `0`).
 
 For the full field-by-field surface, see the [API Reference](api-reference.md).
 
@@ -336,7 +336,7 @@ Transport: REST
   Result Handling                     7/7  ✅ PASSED
   Error & Edge Cases                 13/13  ✅ PASSED
   Stress & Performance                5/5  ✅ PASSED
-  TOTAL                               46/46  PASSED
+  TOTAL                               48/48  PASSED
   Duration                            0.39s
   Latency p50/p95                     2.00ms / 55.46ms
 ```
@@ -356,7 +356,7 @@ wrong thing", which matters in CI:
 | `1` | **Compliance failure** — target is a real H3 endpoint but some protocol checks failed. Fix the harness. |
 | `2` | **Not an H3 endpoint** — connection refused, non-JSON body, HTTP ≥ 400, or `/v1/health` missing required H3 fields. Check the URL / that the server is running. |
 
-Measured examples on this SDK: the step-3 harness → `TOTAL 46/46 PASSED`,
+Measured examples on this SDK: the step-3 harness → `TOTAL 48/48 PASSED`,
 exit `0`; a deliberately naive harness (no history echo, no session tracking, no
 streaming flag) → `TOTAL 40/46 FAILED`, exit `1`; the same command against a
 dead port → exit `2` with `Warning: … does not look like an H3 endpoint
@@ -389,7 +389,7 @@ health,process` (run a subset), `--help` (full exit-code text).
    - [ ] never return `llm_call` when `context.models` is empty.
 
 `src/h3_harness/examples/echo.py` (`EchoHarness`) is the canonical template if
-you want to diff your harness against a known 46/46 implementation:
+you want to diff your harness against a known 48/48 implementation:
 `python -m h3_harness.examples.echo 9191`.
 
 ---

@@ -135,9 +135,9 @@ This regenerates `src/h3_harness/protocol.py` from `get-h3/protocol` schemas. Ne
 
 ### Echo Example (Battery Conventions)
 
-`src/h3_harness/examples/echo.py` is the battery-ready template (46/46 compliant).
+`src/h3_harness/examples/echo.py` is the battery-ready template (48/48 compliant).
 If you modify it, keep the conventions intact — a naive harness that drops them
-scores well below 46/46 (README measures one at 40/46): echo `context.history` in
+scores well below 48/48 (README measures one at 40/46): echo `context.history` in
 every Decision, never issue `llm_call`
 when `context.models` is empty, return `text.finished=false` for "do not finish"
 prompts, and 404 unknown sessions.
@@ -157,7 +157,7 @@ make test          # uv run pytest -x --tb=short -q (231 tests)
 GitHub Actions runs on every PR:
 1. Lint (ruff)
 2. Tests (pytest, 231 tests)
-3. `h3-test --endpoint http://localhost:9191` (against echo example — 46/46 battery)
+3. `h3-test --endpoint http://localhost:9191` (against echo example — 48/48 battery)
 
 All must pass.
 
@@ -189,7 +189,7 @@ references an older version).
 
 - [ ] `make test` passes (231 tests)
 - [ ] `make lint` passes
-- [ ] `h3-test --endpoint http://localhost:9191` passes against echo example (46/46)
+- [ ] `h3-test --endpoint http://localhost:9191` passes against echo example (48/48)
 - [ ] New Pydantic fields use `Optional` where appropriate
 - [ ] Protocol changes regenerated via `make generate`
 - [ ] No hand-edits to generated types

@@ -8,5 +8,5 @@
 #           that checkout is present.
 # suite   = this repo's own pytest suite, as counted by
 #           `python -m pytest --collect-only -q`.
-battery=46
+battery=48
 suite=231
