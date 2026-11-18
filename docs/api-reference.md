@@ -91,7 +91,7 @@ prepended to every path (`prefix="/api"` → `/api/v1/health`).
 | `POST` | `/v1/result` | `ResultRequest` | `200` `Decision` (`response_model_exclude_none=True`) | `422` validation error |
 | `POST` | `/v1/cancel` | `CancelRequest` | `200` `{"session_id": str, "cancelled": bool}` | `404` unknown session, `500` hook raised, `422` validation error |
 | `GET` | `/v1/sessions/{session_id}` | — | `200` `SessionResponse` | `404` unknown session (only when the harness tracks sessions) |
-| `DELETE` | `/v1/sessions/{session_id}` | — | `200` `{"session_id": str, "terminated": true}` | `404` unknown session (tracked harnesses), `500` hook raised |
+| `DELETE` | `/v1/sessions/{session_id}` | — | `200` `{"session_id": str, "terminated": bool}` — `true` when the hook really tore the session down, `false` when the hook was a no-op (the session survives with its own live status) | `404` unknown session (tracked harnesses), `500` hook raised |
 
 Notes that bite in practice:
 

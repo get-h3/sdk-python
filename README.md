@@ -125,9 +125,14 @@ Health is at **`/v1/health`** (not `/health`): `curl http://localhost:9191/v1/he
 
 `DELETE /v1/sessions/{id}` invokes `on_session_terminate(session_id)` on the
 harness (unknown ids 404 at the router before the harness is involved). The
-base implementation is a **no-op**, so without an override a terminated
-session stays fully retrievable: the DELETE returns `{"terminated": true}`,
-but a later `GET /v1/sessions/{id}` still returns 200 with the full session.
+base implementation is a **no-op**, and the router does not fabricate a
+teardown: after the hook runs, it re-asks the harness's own session view.
+A session that is gone was really torn down, so the DELETE returns
+`{"terminated": true}` and a later `GET` 404s. A session that is still
+present means the hook did nothing, so the DELETE honestly returns
+`{"terminated": false}` and the session stays retrievable with its own live
+status — never the normal-END `completed` stamp (live repro:
+`docs/dogfood/2026-11-18-dfh353-delete-repro.md`).
 The fix is a 3-line cleanup — drop the session from your tracking dict,
 exactly as in the quickstart above:
 

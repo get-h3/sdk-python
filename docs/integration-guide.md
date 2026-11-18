@@ -302,8 +302,8 @@ curl -s -w ' HTTP %{http_code}' http://localhost:9191/v1/sessions/sess-001
 ```
 
 That last pair is the `on_session_terminate` override earning its keep: without
-it, DELETE still returns `{"terminated": true}` but the session remains fully
-retrievable.
+it, DELETE answers `{"terminated": false}` (the router does not fabricate a
+teardown) and the session remains retrievable with its own live status.
 
 ---
 
