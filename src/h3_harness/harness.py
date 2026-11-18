@@ -624,9 +624,24 @@ def create_router(
                 if info is None:
                     raise HTTPException(status_code=404, detail="Session not found")
             await harness.on_session_terminate(session_id)
-            # DF-H3-SDK-PYTHON-FOREMAN-5: a terminated session is no longer live.
-            _track(harness, session_id, "completed")
-            return {"session_id": session_id, "terminated": True}
+            # DF-H3-53: the base on_session_terminate is a documented no-op,
+            # so the router must not fabricate a teardown claim. Re-ask the
+            # harness's own session view AFTER the hook: a session that is
+            # gone was really torn down (terminated:true); a session that is
+            # still present means the hook did nothing, so the router answers
+            # terminated:false (SessionTerminated semantics, still HTTP 200)
+            # rather than claiming a teardown that never happened. A harness
+            # without get_session_info cannot be observed, and its base hook
+            # tears nothing down, so the same honest no-teardown claim
+            # applies. The old _track(..., "completed") stamp is gone: a
+            # DELETE must never write the normal-END status — a terminated
+            # session is distinguishable by being gone (GET 404s), and a
+            # session that survived a no-op DELETE keeps its own live status.
+            if hasattr(harness, "get_session_info"):
+                if harness.get_session_info(session_id) is None:  # type: ignore[union-attr]
+                    return {"session_id": session_id, "terminated": True}
+                return {"session_id": session_id, "terminated": False}
+            return {"session_id": session_id, "terminated": False}
         except HTTPException:
             raise
         except Exception as exc:

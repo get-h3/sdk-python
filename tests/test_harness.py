@@ -376,20 +376,24 @@ def test_get_session_coerces_epoch_timestamps_to_iso(client_tracking):
 
 
 def test_delete_session(client):
+    """DF-H3-53: a harness with no session view (no get_session_info) has
+    the base no-op hook, so DELETE must not claim a teardown — it honestly
+    answers terminated:false instead of the old fabricated terminated:true."""
     r = client.delete("/v1/sessions/sess-456")
     assert r.status_code == 200
     body = r.json()
     assert body["session_id"] == "sess-456"
-    assert body["terminated"] is True
+    assert body["terminated"] is False
 
 
 def test_delete_session_tracking_known_session_200(client_tracking):
-    """A tracked session terminates normally."""
+    """DF-H3-53: a tracked session with the base no-op hook stays present,
+    so DELETE answers terminated:false — no fabricated teardown claim."""
     r = client_tracking.delete("/v1/sessions/sess-tracked")
     assert r.status_code == 200
     body = r.json()
     assert body["session_id"] == "sess-tracked"
-    assert body["terminated"] is True
+    assert body["terminated"] is False
 
 
 def test_delete_session_tracking_unknown_session_404(client_tracking):
@@ -417,15 +421,39 @@ def test_delete_then_get_404_with_cleanup_override(client_terminating):
 
 
 def test_delete_then_get_200_without_cleanup_override(client_tracking):
-    """GAP-044 contract baseline: the base on_session_terminate is a no-op,
-    so without an override a terminated session stays retrievable (200).
-    README documents the override as the fix.
+    """DF-H3-53: the base on_session_terminate is a no-op, so DELETE must
+    NOT claim termination. The honest answer is terminated:false and the
+    session stays retrievable (200) with its own live status — never the
+    fabricated normal-END 'completed' the old router stamped.
     """
     r = client_tracking.delete("/v1/sessions/sess-tracked")
     assert r.status_code == 200
-    assert r.json()["terminated"] is True
+    assert r.json()["terminated"] is False
     r = client_tracking.get("/v1/sessions/sess-tracked")
     assert r.status_code == 200
+    assert r.json()["status"] != "completed"
+
+
+def test_delete_noop_terminate_is_honest(client_tracking):
+    """DF-H3-53 red-proof arm (a): a BaseHarness that does NOT override
+    on_session_terminate gets terminated:false — never a fabricated true —
+    and the session stays retrievable with its own live status, NOT the
+    normal-END 'completed' (the harness never wrote it).
+
+    Reverting the fix (the old unconditional `terminated: true` return plus
+    the `_track(..., "completed")` stamp) makes this fail: DELETE answers
+    true and GET reports status 'completed'.
+    """
+    body = _process_body()
+    body["session_id"] = "sess-tracked"
+    assert client_tracking.post("/v1/process", json=body).status_code == 200
+    r = client_tracking.delete("/v1/sessions/sess-tracked")
+    assert r.status_code == 200
+    assert r.json()["terminated"] is False
+    g = client_tracking.get("/v1/sessions/sess-tracked")
+    assert g.status_code == 200
+    # Live status, not the fabricated normal-END stamp.
+    assert g.json()["status"] == "active"
 
 
 # ── Error handling ──────────────────────────────────────────────────
@@ -618,7 +646,13 @@ def test_health_active_sessions_not_counted_when_session_info_disagrees(reported
     assert c.get("/v1/health").json()["active_sessions"] == 0
 
 
-def test_health_active_sessions_zero_after_terminate(client_tracking):
+def test_health_active_sessions_unchanged_after_noop_terminate(client_tracking):
+    """DF-H3-53: a no-op DELETE (base hook) does not end the session.
+
+    The base on_session_terminate tears nothing down, so an honest
+    terminated:false DELETE leaves the session live — the router must not
+    stamp 'completed' and make health report it as not-live.
+    """
     body = _process_body()
     body["session_id"] = "sess-tracked"
     assert client_tracking.post("/v1/process", json=body).status_code == 200
@@ -626,7 +660,27 @@ def test_health_active_sessions_zero_after_terminate(client_tracking):
 
     r = client_tracking.delete("/v1/sessions/sess-tracked")
     assert r.status_code == 200
-    assert client_tracking.get("/v1/health").json()["active_sessions"] == 0
+    assert r.json()["terminated"] is False
+    assert client_tracking.get("/v1/health").json()["active_sessions"] == 1
+
+
+def test_health_active_sessions_zero_after_real_terminate():
+    """DF-H3-53: a harness that overrides on_session_terminate (forget the
+    session) really terminates — DELETE 200 terminated:true and health drops
+    to 0, because the harness's own session view reports the session gone.
+    """
+    app = FastAPI()
+    app.include_router(create_router(TerminatingHarness()))
+    c = TestClient(app)
+    body = _process_body()
+    body["session_id"] = "s-1"
+    assert c.post("/v1/process", json=body).status_code == 200
+    assert c.get("/v1/health").json()["active_sessions"] == 1
+
+    r = c.delete("/v1/sessions/s-1")
+    assert r.status_code == 200
+    assert r.json()["terminated"] is True
+    assert c.get("/v1/health").json()["active_sessions"] == 0
 
 
 def test_health_active_sessions_unchanged_by_cancel(client_tracking):
