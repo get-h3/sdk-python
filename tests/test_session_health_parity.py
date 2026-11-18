@@ -172,13 +172,15 @@ def test_no_status_harness_agrees_after_cancel():
 
 
 def test_no_status_harness_agrees_after_delete():
-    """DELETE /v1/sessions/{id} marks it completed on both surfaces."""
+    """DF-H3-53: DELETE with the base no-op hook does not end the session —
+    it honestly claims terminated:false and the session stays live (active)
+    on BOTH surfaces, never the fabricated 'completed'."""
     client = _client(NoStatusHarness())
     client.post("/v1/process", json=_process_body())
     assert client.delete("/v1/sessions/pm-1").status_code == 200
 
     status, count = _liveness(client)
-    assert status == "completed"
+    assert status == "active"
     _assert_agrees(status, count)
 
 
@@ -234,7 +236,13 @@ def test_session_status_is_none_for_a_session_the_router_never_tracked():
 
 
 def test_session_status_follows_the_router_lifecycle():
-    """process → active, END result → completed, DELETE → completed."""
+    """process → active, END result → completed, DELETE → still active.
+
+    DF-H3-53: DELETE no longer stamps 'completed' (the normal-END status);
+    a no-op terminate leaves the session live, so the router-tracked status
+    stays active. A session that was really torn down reports gone via
+    get_session_info instead (GET 404s).
+    """
     harness = NoStatusHarness()
     client = _client(harness)
 
@@ -248,4 +256,4 @@ def test_session_status_follows_the_router_lifecycle():
     client.post("/v1/process", json=_process_body())
     assert harness.session_status("pm-1") is SessionStatus.ACTIVE
     client.delete("/v1/sessions/pm-1")
-    assert harness.session_status("pm-1") is SessionStatus.COMPLETED
+    assert harness.session_status("pm-1") is SessionStatus.ACTIVE
